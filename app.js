@@ -21,7 +21,7 @@
   var view = document.getElementById("view"), modal = document.getElementById("modal"), coBar = document.getElementById("checkoutBar");
 
   function money(n) { return "₱" + Number(n).toFixed(2); }
-  function ucolor(name) { var h = 0; for (var i = 0; i < name.length; i++)h = (h * 31 + name.charCodeAt(i)) >>> 0; return userColors[h % userColors.length]; }
+  function ucolor(name) { if (avMap[name] && avMap[name].c) return avMap[name].c; var h = 0; for (var i = 0; i < name.length; i++)h = (h * 31 + name.charCodeAt(i)) >>> 0; return userColors[h % userColors.length]; }
   function displayName(email) { var p = (email || "staff").split("@")[0]; return p.charAt(0).toUpperCase() + p.slice(1); }
   function cartCount() { var n = 0; for (var k in cart) n += cart[k]; return n; }
   function cartTotal() { var t = 0; for (var k in cart) { var p = products.find(function (x) { return String(x.id) === String(k) }); t += p ? Number(p.price) * cart[k] : 0; } return Math.round(t * 100) / 100; }
@@ -40,7 +40,7 @@
   function updateUserChip() {
     var av = document.getElementById("userAvatar"), nm = document.getElementById("userName");
     var dn = displayName(currentUser);
-    av.style.background = ucolor(dn); av.textContent = dn.charAt(0).toUpperCase();
+    av.style.background = ucolor(dn); av.textContent = avTxt(dn);
     nm.textContent = dn;
     document.getElementById("adminBtn").style.display = isAdmin ? "flex" : "none";
   }
@@ -94,7 +94,7 @@
     document.getElementById("authScreen").style.display = "flex";
     var users = lsGet(K.n, []), nl = document.getElementById("nameList");
     nl.innerHTML = users.length ? '<p class="field-label">Tap your name</p><div class="chip-row">' + users.map(function (n) {
-      return '<button class="chip-user bigbtn" data-n="' + n + '"><span class="ua" style="background:' + ucolor(n) + '">' + n.charAt(0).toUpperCase() + '</span>' + n + '</button>';
+      return '<button class="chip-user bigbtn" data-n="' + n + '"><span class="ua" style="background:' + ucolor(n) + '">' + avTxt(n) + '</span>' + n + '</button>';
     }).join("") + '</div><p class="or-line">or add a new name</p>' : "";
     Array.prototype.forEach.call(nl.querySelectorAll(".chip-user"), function (b) { b.onclick = function () { startSession(b.getAttribute("data-n")); }; });
     document.getElementById("nameInput").value = ""; document.getElementById("nameErr").style.display = "none";
@@ -119,6 +119,13 @@
   document.getElementById("logoutBtn").onclick = function () { closeModal(); lsSet(K.c, null); showWelcome(); };
   document.getElementById("userChip").onclick = openSettings;
 
+  // ---------- profile picture: emoji + any background colour ----------
+  var avMap = lsGet("orca_avatars", {});
+  var AV_E = ["🐋", "🐳", "🦈", "🐬", "🐙", "🐧", "🦊", "🐱", "🐶", "🐼", "🐨", "🦁", "🐯", "🐸", "🐵", "🦉", "🐢", "🦄", "🐰", "🐻"];
+  var AV_C = ["#38bdf8", "#f472b6", "#fbbf24", "#34d399", "#a78bfa", "#fb7185", "#22d3ee", "#fb923c", "#4ade80", "#94a3b8", "#f1f5f9", "#1e293b"];
+  function avTxt(n) { var a = avMap[n]; return a && a.e ? a.e : String(n || "S").charAt(0).toUpperCase(); }
+  function avSet(name, v) { if (v) avMap[name] = v; else delete avMap[name]; lsSet("orca_avatars", avMap); }
+
   // ---------- fix a wrong name: updates all past sales + utang ----------
   function renameUser(raw) {
     var nn = cleanName(raw), old = currentUser;
@@ -127,6 +134,7 @@
     var users = lsGet(K.n, []);
     var other = users.find(function (u) { return u.toLowerCase() === nn.toLowerCase() && u !== old; });
     if (other) { if (!confirm('"' + other + '" already exists. Merge your sales into that name?')) return; nn = other; }
+    if (avMap[old]) { avMap[nn] = avMap[nn] || avMap[old]; delete avMap[old]; lsSet("orca_avatars", avMap); }
     transactions.forEach(function (t) { if (t.user_name === old) { t.user_name = nn; t.user_email = nn; } });
     utang.forEach(function (u) { if (u.accepted_name === old) { u.accepted_name = nn; u.accepted_by = nn; } });
     save("transactions"); save("utang");
@@ -145,6 +153,8 @@
     openModal(
       '<div class="m-head"><h3>Settings</h3><button id="xSet" class="bigbtn x-btn">×</button></div>' +
       '<p class="m-label" style="margin-top:2px;">Your name</p><div style="display:flex;gap:9px;"><input id="renameInput" type="text" class="text-input" style="margin:0;flex:1;" maxlength="16" autocomplete="off" value="' + currentUser + '"><button id="renameBtn" class="btn-primary bigbtn" style="width:auto;padding:0 20px;font-size:15px;">Save</button></div>' +
+      '<p class="m-label">Profile picture</p><div class="av-row"><span id="avPrev" class="av-prev"></span><div style="flex:1;min-width:0;"><div id="avSw" class="sw-row"></div><label class="av-any">Any color <input id="avColor" type="color" value="#38bdf8"></label></div></div>' +
+      '<div id="avEmojis" class="emoji-grid"></div><button id="avReset" class="btn-ghost bigbtn" style="margin-top:8px;padding:9px;">Use my initial instead</button>' +
       '<p class="m-label">Interface</p><div class="theme-grid">' + THEMES.map(function (t) {
         return '<button class="theme-opt bigbtn' + (t[0] === cur ? " on" : "") + '" data-t="' + t[0] + '"><span class="theme-prev tp-' + t[0] + '"><i></i><i></i></span><b>' + t[1] + '</b><small>' + t[2] + '</small></button>';
       }).join("") + '</div>' +
@@ -155,6 +165,18 @@
       '<button id="swBtn" class="btn-ghost bigbtn">Switch user</button>'
     );
     document.getElementById("xSet").onclick = closeModal;
+    function avDraw() {
+      var pv = document.getElementById("avPrev"); pv.style.background = ucolor(currentUser); pv.textContent = avTxt(currentUser);
+      var cur = avMap[currentUser] || {};
+      Array.prototype.forEach.call(modal.querySelectorAll(".emoji-grid button"), function (b) { b.classList.toggle("on", b.textContent === cur.e); });
+      updateUserChip();
+    }
+    function avPut(p) { avSet(currentUser, Object.assign({}, avMap[currentUser] || {}, p)); avDraw(); }
+    AV_C.forEach(function (c) { var i = document.createElement("i"); i.style.background = c; i.onclick = function () { avPut({ c: c }); }; document.getElementById("avSw").appendChild(i); });
+    AV_E.forEach(function (e) { var b = document.createElement("button"); b.textContent = e; b.onclick = function () { avPut({ e: e }); }; document.getElementById("avEmojis").appendChild(b); });
+    document.getElementById("avColor").oninput = function () { avPut({ c: this.value }); };
+    document.getElementById("avReset").onclick = function () { avSet(currentUser, null); avDraw(); };
+    avDraw();
     document.getElementById("renameBtn").onclick = function () { renameUser(document.getElementById("renameInput").value); };
     document.getElementById("renameInput").onkeydown = function (e) { if (e.key === "Enter") renameUser(this.value); };
     Array.prototype.forEach.call(modal.querySelectorAll(".theme-opt"), function (b) {
@@ -164,7 +186,7 @@
     if (ib) ib.onclick = function () { deferredInstall.prompt(); deferredInstall.userChoice.then(function () { deferredInstall = null; closeModal(); }); };
     document.getElementById("swBtn").onclick = function () { closeModal(); lsSet(K.c, null); showWelcome(); };
     document.getElementById("expBtn").onclick = function () {
-      var data = { app: "orca-pos", v: 1, exported: new Date().toISOString(), products: products, transactions: transactions, utang: utang, users: lsGet(K.n, []) };
+      var data = { app: "orca-pos", v: 1, exported: new Date().toISOString(), products: products, transactions: transactions, utang: utang, users: lsGet(K.n, []), avatars: avMap };
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }));
       a.download = "orca-pos-backup-" + new Date().toISOString().slice(0, 10) + ".json";
@@ -178,7 +200,7 @@
           var d = JSON.parse(r.result);
           if (d.app !== "orca-pos" || !Array.isArray(d.products)) throw 0;
           if (!confirm("Replace ALL data on this device with this backup?")) return;
-          lsSet(K.p, d.products); lsSet(K.t, d.transactions || []); lsSet(K.u, d.utang || []); lsSet(K.n, d.users || []);
+          lsSet(K.p, d.products); lsSet(K.t, d.transactions || []); lsSet(K.u, d.utang || []); lsSet(K.n, d.users || []); avMap = d.avatars || {}; lsSet("orca_avatars", avMap);
           closeModal(); refreshData().then(function () { render(); toast("Backup restored"); });
         } catch (x) { toast("That file isn't an ORCA backup"); }
       };
@@ -374,7 +396,7 @@
       var items = (u.items || []).map(function (i) { return i.qty + "× " + i.name; }).join(", ");
       var row = document.createElement("div");
       row.style.cssText = "display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:11px;margin-bottom:8px;";
-      row.innerHTML = '<span style="width:38px;height:38px;border-radius:50%;background:' + ucolor(u.debtor_name) + ';color:#0b1120;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0;">' + u.debtor_name.charAt(0).toUpperCase() + '</span>' +
+      row.innerHTML = '<span style="width:38px;height:38px;border-radius:50%;background:' + ucolor(u.debtor_name) + ';color:#0b1120;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0;">' + avTxt(u.debtor_name) + '</span>' +
         '<span style="flex:1;min-width:0;"><span style="display:block;font-weight:800;font-size:14px;">' + u.debtor_name + '</span><span style="display:block;font-size:12px;color:var(--text2);line-height:1.4;">' + items + '</span><span style="display:block;font-size:11px;color:var(--muted);margin-top:2px;">' + (u.created_at ? new Date(u.created_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "") + (u.accepted_name ? ' · by ' + u.accepted_name : '') + '</span></span>' +
         '<span style="font-weight:800;color:#fbbf24;font-size:16px;flex-shrink:0;">' + money(Number(u.total)) + '</span>' +
         '<button class="payUtang bigbtn" data-id="' + u.id + '" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(16,185,129,.18);color:#34d399;font-size:15px;font-weight:800;cursor:pointer;flex-shrink:0;">✓</button>';
@@ -462,24 +484,24 @@
         return '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:4px;"><span style="font-size:12px;color:var(--muted);font-weight:600;">' + (t.created_at ? new Date(t.created_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "") + '</span><span style="font-weight:800;color:var(--accent-t);">' + money(Number(t.total)) + '</span></div><div style="font-size:13px;line-height:1.5;color:var(--text2);">' + items + '</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Cash ' + money(Number(t.cash)) + ' · Change ' + money(Number(t.change)) + '</div></div>';
       }).join("");
       body = '<button id="backShoppers" class="bigbtn" style="margin-bottom:14px;padding:10px 18px;border-radius:12px;border:2px solid var(--border);background:var(--card);font-size:14px;font-weight:700;cursor:pointer;color:var(--text);">← All staff</button>' +
-        '<div style="background:linear-gradient(135deg,' + ucolor(adminFilter) + ',' + ucolor(adminFilter) + 'cc);border-radius:18px;padding:16px;color:#0b1120;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 6px 20px rgba(0,0,0,.3);"><span style="width:48px;height:48px;border-radius:50%;background:rgba(11,17,32,.2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;flex-shrink:0;">' + adminFilter.charAt(0).toUpperCase() + '</span><div><div style="font-size:19px;font-weight:800;">' + adminFilter + '</div><div style="font-size:13px;font-weight:600;opacity:.85;">' + uts.length + ' sale' + (uts.length === 1 ? "" : "s") + ' · ' + money(spent) + ' total</div></div></div>' +
+        '<div style="background:linear-gradient(135deg,' + ucolor(adminFilter) + ',' + ucolor(adminFilter) + 'cc);border-radius:18px;padding:16px;color:#0b1120;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 6px 20px rgba(0,0,0,.3);"><span style="width:48px;height:48px;border-radius:50%;background:rgba(11,17,32,.2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;flex-shrink:0;">' + avTxt(adminFilter) + '</span><div><div style="font-size:19px;font-weight:800;">' + adminFilter + '</div><div style="font-size:13px;font-weight:600;opacity:.85;">' + uts.length + ' sale' + (uts.length === 1 ? "" : "s") + ' · ' + money(spent) + ' total</div></div></div>' +
         (rows || '<p style="text-align:center;color:var(--muted);padding:30px;">No transactions yet.</p>');
     } else {
       var shopperRows = names.map(function (n) {
         var uts = transactions.filter(function (t) { return t.user_name === n });
         var spent = uts.reduce(function (s, t) { return s + Number(t.total); }, 0);
-        return '<button class="bigbtn filterShopper" data-name="' + n + '" style="display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px 14px;margin-bottom:10px;cursor:pointer;text-align:left;color:var(--text);"><span style="width:44px;height:44px;border-radius:50%;background:' + ucolor(n) + ';color:#0b1120;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0;">' + n.charAt(0).toUpperCase() + '</span><span style="flex:1;"><span style="display:block;font-weight:800;font-size:15px;">' + n + '</span><span style="font-size:12px;color:var(--muted);">' + uts.length + ' sale' + (uts.length === 1 ? "" : "s") + '</span></span><span style="font-weight:800;color:var(--accent-t);font-size:17px;">' + money(spent) + '</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--muted)" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></button>';
+        return '<button class="bigbtn filterShopper" data-name="' + n + '" style="display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px 14px;margin-bottom:10px;cursor:pointer;text-align:left;color:var(--text);"><span style="width:44px;height:44px;border-radius:50%;background:' + ucolor(n) + ';color:#0b1120;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0;">' + avTxt(n) + '</span><span style="flex:1;"><span style="display:block;font-weight:800;font-size:15px;">' + n + '</span><span style="font-size:12px;color:var(--muted);">' + uts.length + ' sale' + (uts.length === 1 ? "" : "s") + '</span></span><span style="font-weight:800;color:var(--accent-t);font-size:17px;">' + money(spent) + '</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--muted)" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></button>';
       }).join("");
       var utangRows = utang.map(function (u) {
         var items = (u.items || []).map(function (i) { return i.qty + "× " + i.name; }).join(", ");
         var by = u.accepted_name || "Owner";
         return '<div style="background:var(--card);border:1px solid rgba(245,158,11,.25);border-radius:14px;padding:12px;margin-bottom:8px;">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;flex-wrap:wrap;gap:4px;">' +
-          '<span style="display:flex;align-items:center;gap:7px;font-weight:800;font-size:14px;"><span style="width:24px;height:24px;border-radius:50%;background:' + ucolor(u.debtor_name) + ';color:#0b1120;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;">' + u.debtor_name.charAt(0).toUpperCase() + '</span>' + u.debtor_name + ' <span style="font-size:11px;color:var(--muted);font-weight:600;">owes</span></span>' +
+          '<span style="display:flex;align-items:center;gap:7px;font-weight:800;font-size:14px;"><span style="width:24px;height:24px;border-radius:50%;background:' + ucolor(u.debtor_name) + ';color:#0b1120;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;">' + avTxt(u.debtor_name) + '</span>' + u.debtor_name + ' <span style="font-size:11px;color:var(--muted);font-weight:600;">owes</span></span>' +
           '<span style="font-weight:800;color:#fbbf24;font-size:17px;">' + money(Number(u.total)) + '</span></div>' +
           '<div style="font-size:13px;line-height:1.5;margin-bottom:5px;color:var(--text2);">' + items + '</div>' +
           '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;"><span style="font-size:11px;color:var(--muted);">' + (u.created_at ? new Date(u.created_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "") + '</span>' +
-          '<span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-weight:600;">accepted by <span style="width:20px;height:20px;border-radius:50%;background:' + ucolor(by) + ';color:#0b1120;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;">' + by.charAt(0).toUpperCase() + '</span>' + by + '</span></div></div>';
+          '<span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-weight:600;">accepted by <span style="width:20px;height:20px;border-radius:50%;background:' + ucolor(by) + ';color:#0b1120;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;">' + avTxt(by) + '</span>' + by + '</span></div></div>';
       }).join("");
       body = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">' +
         '<div style="background:linear-gradient(135deg,var(--accent),var(--accent-d));border-radius:16px;padding:14px;text-align:center;color:#0b1120;box-shadow:0 4px 18px rgba(56,189,248,.3);"><div style="font-size:18px;font-weight:800;">' + money(totalSales) + '</div><div style="font-size:10px;font-weight:700;opacity:.8;text-transform:uppercase;letter-spacing:.08em;">Total Sales</div></div>' +
@@ -524,11 +546,11 @@
     if (!s) { adminProd = null; return renderAdmin(); }
     var list = transactions.filter(function (t) { return (t.items || []).some(function (i) { return i.name === s.name; }); });
     var chips = Object.keys(s.by).sort(function (a, b) { return s.by[b] - s.by[a]; }).map(function (n) {
-      return '<span class="who-chip"><span class="ua" style="background:' + ucolor(n) + '">' + n.charAt(0).toUpperCase() + '</span>' + n + ' <b>×' + s.by[n] + '</b></span>';
+      return '<span class="who-chip"><span class="ua" style="background:' + ucolor(n) + '">' + avTxt(n) + '</span>' + n + ' <b>×' + s.by[n] + '</b></span>';
     }).join("");
     var rows = list.map(function (t) {
       var it = t.items.find(function (i) { return i.name === s.name; });
-      return '<div class="tx"><div class="tx-top"><span class="tx-who"><span class="ua sm" style="background:' + ucolor(t.user_name) + '">' + (t.user_name || "S").charAt(0).toUpperCase() + '</span>' + (t.user_name || "Staff") + '</span><span class="r-amt">' + money(it.qty * it.price) + '</span></div><div class="r-sub">' + it.qty + '× at ' + money(it.price) + ' · ' + fmtT(t.created_at) + '</div></div>';
+      return '<div class="tx"><div class="tx-top"><span class="tx-who"><span class="ua sm" style="background:' + ucolor(t.user_name) + '">' + avTxt((t.user_name || "S")) + '</span>' + (t.user_name || "Staff") + '</span><span class="r-amt">' + money(it.qty * it.price) + '</span></div><div class="r-sub">' + it.qty + '× at ' + money(it.price) + ' · ' + fmtT(t.created_at) + '</div></div>';
     }).join("");
     view.innerHTML = '<div class="fadein"><button id="backProd" class="bigbtn back-btn">← All products</button>' +
       '<div class="hero-card"><div class="hero-big">' + s.name + '</div><div class="hero-sub">' + s.qty + ' sold · ' + money(s.rev) + ' · ' + list.length + ' transaction' + (list.length === 1 ? "" : "s") + '</div></div>' +
@@ -648,7 +670,7 @@
       var items = t.items.map(function (i) { return i.qty + "× " + i.name; }).join(", ");
       var row = document.createElement("div");
       row.style.cssText = "background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:9px;";
-      row.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;flex-wrap:wrap;gap:4px;"><span style="display:flex;align-items:center;gap:7px;font-weight:800;font-size:14px;"><span style="width:24px;height:24px;border-radius:50%;background:' + ucolor(t.user_name || t.user_email) + ';color:#0b1120;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;">' + (t.user_name || "S").charAt(0).toUpperCase() + '</span>' + (t.user_name || "Staff") + '</span><span style="font-weight:800;color:var(--accent-t);font-size:17px;">' + money(Number(t.total)) + '</span></div>' +
+      row.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;flex-wrap:wrap;gap:4px;"><span style="display:flex;align-items:center;gap:7px;font-weight:800;font-size:14px;"><span style="width:24px;height:24px;border-radius:50%;background:' + ucolor(t.user_name || t.user_email) + ';color:#0b1120;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;">' + avTxt((t.user_name || "S")) + '</span>' + (t.user_name || "Staff") + '</span><span style="font-weight:800;color:var(--accent-t);font-size:17px;">' + money(Number(t.total)) + '</span></div>' +
         '<div style="font-size:13px;line-height:1.5;margin-bottom:4px;color:var(--text2);">' + items + '</div>' +
         '<div style="font-size:11px;color:var(--muted);">' + (t.created_at ? new Date(t.created_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "") + ' · Cash ' + money(Number(t.cash)) + ' · Change ' + money(Number(t.change)) + '</div>';
       hl.appendChild(row);

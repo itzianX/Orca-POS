@@ -710,3 +710,14 @@ input, select, textarea { font-size: 16px !important; }   /* stops iOS zoom-on-f
 .pin-dots i.on { background: var(--accent); border-color: var(--accent); }
 .pin-dots.shake { animation: shk .3s ease; }
 @keyframes shk { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+
+/* ---------- profile picture picker ---------- */
+.av-row { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.av-prev { width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 800; color: #0b1120; flex-shrink: 0; border: 2px solid var(--border); }
+.sw-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px; }
+.sw-row i { width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(128,128,128,.35); cursor: pointer; }
+.av-any { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); font-weight: 700; }
+.av-any input { width: 34px; height: 26px; border: none; padding: 0; background: none; cursor: pointer; font-size: 16px !important; }
+.emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+.emoji-grid button { font-size: 24px; padding: 6px 0; border-radius: 12px; border: 2px solid var(--border); background: var(--card2); cursor: pointer; }
+.emoji-grid button.on { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,189,248,.18); }
