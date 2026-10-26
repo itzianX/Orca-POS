@@ -1,6 +1,6 @@
 /* ORCA Store POS — service worker (offline app shell)
    Bump CACHE whenever you change index.html, style.css or app.js. */
-const CACHE = "orca-pos-v2";
+const CACHE = "orca-pos-v3";
 const SHELL = [
   "./", "index.html", "style.css", "app.js", "manifest.json",
   "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"

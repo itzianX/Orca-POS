@@ -119,6 +119,22 @@
   document.getElementById("logoutBtn").onclick = function () { closeModal(); lsSet(K.c, null); showWelcome(); };
   document.getElementById("userChip").onclick = openSettings;
 
+  // ---------- fix a wrong name: updates all past sales + utang ----------
+  function renameUser(raw) {
+    var nn = cleanName(raw), old = currentUser;
+    if (!nn) { toast("Type a name first"); return; }
+    if (nn === old) { closeModal(); return; }
+    var users = lsGet(K.n, []);
+    var other = users.find(function (u) { return u.toLowerCase() === nn.toLowerCase() && u !== old; });
+    if (other) { if (!confirm('"' + other + '" already exists. Merge your sales into that name?')) return; nn = other; }
+    transactions.forEach(function (t) { if (t.user_name === old) { t.user_name = nn; t.user_email = nn; } });
+    utang.forEach(function (u) { if (u.accepted_name === old) { u.accepted_name = nn; u.accepted_by = nn; } });
+    save("transactions"); save("utang");
+    users = users.filter(function (u) { return u !== old && u !== nn; }); users.push(nn); lsSet(K.n, users);
+    lsSet(K.c, nn); currentUser = nn; adminFilter = null; adminProd = null;
+    updateUserChip(); closeModal(); render(); toast("Name changed to " + nn);
+  }
+
   // ---------- settings: interface, install, backup ----------
   function openSettings() {
     var cur = document.documentElement.getAttribute("data-theme");
@@ -128,6 +144,7 @@
         : '<p class="m-note">iPhone: tap Share → Add to Home Screen.<br>Android / Chrome: menu → Install app.</p>';
     openModal(
       '<div class="m-head"><h3>Settings</h3><button id="xSet" class="bigbtn x-btn">×</button></div>' +
+      '<p class="m-label" style="margin-top:2px;">Your name</p><div style="display:flex;gap:9px;"><input id="renameInput" type="text" class="text-input" style="margin:0;flex:1;" maxlength="16" autocomplete="off" value="' + currentUser + '"><button id="renameBtn" class="btn-primary bigbtn" style="width:auto;padding:0 20px;font-size:15px;">Save</button></div>' +
       '<p class="m-label">Interface</p><div class="theme-grid">' + THEMES.map(function (t) {
         return '<button class="theme-opt bigbtn' + (t[0] === cur ? " on" : "") + '" data-t="' + t[0] + '"><span class="theme-prev tp-' + t[0] + '"><i></i><i></i></span><b>' + t[1] + '</b><small>' + t[2] + '</small></button>';
       }).join("") + '</div>' +
@@ -138,6 +155,8 @@
       '<button id="swBtn" class="btn-ghost bigbtn">Switch user</button>'
     );
     document.getElementById("xSet").onclick = closeModal;
+    document.getElementById("renameBtn").onclick = function () { renameUser(document.getElementById("renameInput").value); };
+    document.getElementById("renameInput").onkeydown = function (e) { if (e.key === "Enter") renameUser(this.value); };
     Array.prototype.forEach.call(modal.querySelectorAll(".theme-opt"), function (b) {
       b.onclick = function () { applyTheme(b.getAttribute("data-t")); Array.prototype.forEach.call(modal.querySelectorAll(".theme-opt"), function (x) { x.classList.toggle("on", x === b); }); };
     });
