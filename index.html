@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="abyss">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ORCA Store POS</title>
+  <meta name="theme-color" content="#0b1120">
+  <meta name="description" content="ORCA Store POS — offline point of sale for your store">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ORCA POS">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- shared orca logo -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="orca" viewBox="0 0 40 40">
+      <path d="M8 24 C12 16 20 13 28 15 L30 10 L32 16 C34 18 35 21 34 23 C32 26 24 29 16 28 L14 31 L11 27 C9 26 8 25 8 24 Z" fill="#fff" />
+      <ellipse cx="15" cy="25" rx="5" ry="2.5" fill="#0b1120" />
+      <circle cx="16" cy="19" r="1.5" fill="#0b1120" />
+    </symbol>
+  </svg>
+
+  <!-- ============ WELCOME (name only, no password) ============ -->
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-box">
+      <div style="text-align:center;margin-bottom:26px;">
+        <div class="logo-circle bob"><svg width="46" height="46"><use href="#orca" /></svg></div>
+        <h1 class="brand-title">ORCA <span>STORE</span></h1>
+        <p class="brand-sub">Who's on the counter?</p>
+      </div>
+      <div class="card auth-card">
+        <div id="nameList" class="name-list"></div>
+        <label class="field-label" for="nameInput">Your name</label>
+        <input id="nameInput" type="text" placeholder="e.g. Maria" class="text-input" maxlength="16" autocomplete="off" autocapitalize="words" enterkeyhint="go">
+        <p id="nameErr" class="error-msg">Please type a name to continue</p>
+        <button id="nameGo" class="btn-primary bigbtn">Start Selling</button>
+      </div>
+      <p class="footer-note">No password needed · every sale is tagged with your name · data stays on this device</p>
+    </div>
+  </div>
+
+  <!-- ============ APP SHELL ============ -->
+  <div id="app" style="display:none;">
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="header-left">
+          <div class="logo-small"><svg width="26" height="26"><use href="#orca" /></svg></div>
+          <div>
+            <div class="header-brand">ORCA <span>STORE</span></div>
+            <div class="header-sub">Mini POS · Offline</div>
+          </div>
+        </div>
+        <div class="header-right">
+          <button id="userChip" class="user-chip bigbtn" title="Settings">
+            <span id="userAvatar" class="user-avatar">?</span>
+            <span id="userName" class="user-name">Staff</span>
+          </button>
+          <button id="adminBtn" class="icon-btn bigbtn" title="Admin Panel" aria-label="Admin Panel">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </button>
+          <button id="logoutBtn" class="icon-btn bigbtn" title="Switch user" aria-label="Switch user">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <path d="M16 17l5-5-5-5" />
+              <path d="M21 12H9" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="view" class="view"></main>
+
+    <nav class="bottom-nav">
+      <div class="nav-inner">
+        <button class="navbtn active" data-view="store"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5M4 9v11h16V9M9 13h6" /></svg>Sell</button>
+        <button class="navbtn" data-view="add"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></svg>Add</button>
+        <button class="navbtn" data-view="utang"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.8-3.5 3.5-5.5 6.5-5.5s5.7 2 6.5 5.5" /><path d="M17 9l4 4M21 9l-4 4" /></svg>Utang</button>
+        <button class="navbtn" data-view="history"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>History</button>
+        <button class="navbtn" data-view="calc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M8 6h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" /></svg>Calc</button>
+      </div>
+    </nav>
+
+    <div id="checkoutBar" class="checkout-bar">
+      <div class="checkout-inner">
+        <button id="checkoutBtn" class="btn-checkout bigbtn">
+          <span id="coCount">0 items</span><span id="coTotal">₱0.00 → Checkout</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="modal" class="modal"></div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
