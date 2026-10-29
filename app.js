@@ -9,8 +9,10 @@
     { name: "Lollipop", price: 5, photo: null, grad: 2 }, { name: "Cup Noodles", price: 25, photo: null, grad: 5 },
     { name: "Juice", price: 12, photo: null, grad: 3 }, { name: "Water", price: 10, photo: null, grad: 6 },
     { name: "Rice 1kg", price: 58, photo: null, grad: 7 }, { name: "Bread", price: 65, photo: null, grad: 4 },
-    { name: "Cream Silk", price: 15, photo: null, grad: 1 }, { name:"Bear Brand", price: 20, photo: null, grad: 4 }
+    { name: "Cream Silk", price: 15, photo: null, grad: 1 }, { name: "Bear Brand", price: 20, photo: null, grad: 4 }
   ];
+  // Names that older versions already seeded on existing devices
+  var ORIGINAL_DEFAULTS = ["Sardines", "Egg", "Lollipop", "Cup Noodles", "Juice", "Water", "Rice 1kg", "Bread"];
 
   var products = [], transactions = [], utang = [];
   var currentUser = null, currentView = "store", searchQuery = "";
@@ -70,6 +72,17 @@
     if (!products || !products.length) {
       products = defaultProds.map(function (p, i) { return Object.assign({ id: i + 1 }, p); });
       lsSet(K.p, products);
+      lsSet("orca_seeded", defaultProds.map(function (d) { return d.name; }));
+    } else {
+      // add starter items this device has never been given (deleted ones never come back)
+      var seeded = lsGet("orca_seeded", ORIGINAL_DEFAULTS), added = false;
+      defaultProds.forEach(function (d) {
+        if (seeded.indexOf(d.name) >= 0) return;
+        seeded.push(d.name); added = true;
+        if (products.some(function (p) { return String(p.name).toLowerCase() === d.name.toLowerCase(); })) return;
+        products.push(Object.assign({ id: products.reduce(function (m, x) { return Math.max(m, Number(x.id) || 0); }, 0) + 1 }, d));
+      });
+      if (added) { lsSet(K.p, products); lsSet("orca_seeded", seeded); }
     }
     products.sort(function (a, b) { return a.name.localeCompare(b.name); });
     transactions = lsGet(K.t, []); utang = lsGet(K.u, []); purgeOld();
