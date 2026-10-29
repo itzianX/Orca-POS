@@ -8,7 +8,8 @@
     { name: "Sardines", price: 22, photo: null, grad: 0 }, { name: "Egg", price: 8, photo: null, grad: 1 },
     { name: "Lollipop", price: 5, photo: null, grad: 2 }, { name: "Cup Noodles", price: 25, photo: null, grad: 5 },
     { name: "Juice", price: 12, photo: null, grad: 3 }, { name: "Water", price: 10, photo: null, grad: 6 },
-    { name: "Rice 1kg", price: 58, photo: null, grad: 7 }, { name: "Bread", price: 65, photo: null, grad: 4 }
+    { name: "Rice 1kg", price: 58, photo: null, grad: 7 }, { name: "Bread", price: 65, photo: null, grad: 4 },
+    { name: "Cream Silk", price: 15, photo: null, grad: 1 }, { name:"Bear Brand", price: 20, photo: null, grad: 4 }
   ];
 
   var products = [], transactions = [], utang = [];
