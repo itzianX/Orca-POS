@@ -33,6 +33,21 @@
     </symbol>
   </svg>
 
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="orcaCute" viewBox="0 0 120 90">
+      <circle cx="30" cy="7" r="2.6" fill="#38bdf8" /><circle cx="22" cy="13" r="2" fill="#7dd3fc" /><circle cx="39" cy="11" r="1.8" fill="#7dd3fc" />
+      <path d="M60 17c1-6 5-11 11-14-1 6 0 11 4 17z" fill="#0b1120" stroke="#38bdf8" stroke-width="2" stroke-linejoin="round" />
+      <path d="M94 44c6-8 14-12 22-12-2 8-6 14-12 18 7 2 11 8 12 16-9 0-17-4-24-12z" fill="#0b1120" stroke="#38bdf8" stroke-width="2" stroke-linejoin="round" />
+      <path d="M8 52C8 28 32 14 60 17c26 3 40 18 38 36-2 18-26 28-52 26C24 77 8 68 8 52z" fill="#0b1120" stroke="#38bdf8" stroke-width="2" />
+      <path d="M12 60c10 14 40 20 66 10 8-3 14-8 18-14-4 14-26 26-52 24-16-1-28-8-32-20z" fill="#fff" />
+      <ellipse cx="42" cy="34" rx="10" ry="5.5" transform="rotate(-18 42 34)" fill="#fff" />
+      <circle cx="26" cy="45" r="6" fill="#fff" /><circle cx="27" cy="46" r="3.6" fill="#0b1120" /><circle cx="28.3" cy="44.6" r="1.3" fill="#fff" />
+      <ellipse cx="21" cy="57" rx="4" ry="2.6" fill="#fb7185" opacity=".75" />
+      <path d="M30 58q6 5 12 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" />
+      <path d="M58 62c6 2 12 6 12 14-8-1-14-6-12-14z" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" stroke-linejoin="round" />
+    </symbol>
+  </svg>
+
   <!-- ============ WELCOME (name only, no password) ============ -->
   <div id="authScreen" class="auth-screen">
     <div class="auth-box">
@@ -48,7 +63,7 @@
         <p id="nameErr" class="error-msg">Please type a name to continue</p>
         <button id="nameGo" class="btn-primary bigbtn">Start Selling</button>
       </div>
-      <p class="footer-note">No password needed · every sale is tagged with your name · data stays on this device</p>
+      <p class="footer-note">No password needed. Every sale is tagged with your name, and data stays on this device.</p>
     </div>
   </div>
 
@@ -71,18 +86,12 @@
             <span id="userAvatar" class="user-avatar">?</span>
             <span id="userName" class="user-name">Staff</span>
           </button>
-          <button id="adminBtn" class="icon-btn bigbtn" title="Admin Panel" aria-label="Admin Panel">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-          </button>
-          <button id="logoutBtn" class="icon-btn bigbtn" title="Switch user" aria-label="Switch user">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button id="logoutBtn" class="icon-btn labeled bigbtn" title="Switch user" aria-label="Switch user">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <path d="M16 17l5-5-5-5" />
               <path d="M21 12H9" />
-            </svg>
+            </svg><span>Switch</span>
           </button>
         </div>
       </div>
@@ -93,7 +102,7 @@
     <nav class="bottom-nav">
       <div class="nav-inner">
         <button class="navbtn active" data-view="store"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5M4 9v11h16V9M9 13h6" /></svg>Sell</button>
-        <button class="navbtn" data-view="add"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></svg>Add</button>
+        <button class="navbtn" data-view="add"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></svg>Items</button>
         <button class="navbtn" data-view="utang"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.8-3.5 3.5-5.5 6.5-5.5s5.7 2 6.5 5.5" /><path d="M17 9l4 4M21 9l-4 4" /></svg>Utang</button>
         <button class="navbtn" data-view="history"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>History</button>
         <button class="navbtn" data-view="calc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M8 6h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" /></svg>Calc</button>
