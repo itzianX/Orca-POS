@@ -1744,3 +1744,224 @@ body {
   background: #10b981;
   color: #052e16;
 }
+
+/* ============================================================
+   v4 — CALM ORCA: matte surfaces, one soft accent, no glow.
+   HCI goals: clear status, strong contrast, big targets,
+   consistent hierarchy (1 primary action per screen).
+   ============================================================ */
+
+[hidden] { display: none !important; }
+
+/* ---------- tokens: muted ocean blue instead of neon cyan ---------- */
+:root,
+[data-theme="abyss"] {
+  --accent: #7ab8dc;
+  --accent-d: #5f9fc6;
+  --accent-t: #8cc4e4;
+  --on-accent: #0b1120;
+  --accent-soft: rgba(122, 184, 220, .14);
+  --ring: rgba(122, 184, 220, .38);
+  --field-border: #5f7391;
+  --border: rgba(255, 255, 255, .12);
+  --glow1: rgba(122, 184, 220, .07);
+  --glow2: rgba(122, 184, 220, .04);
+  --shadow: 0 2px 10px rgba(0, 0, 0, .28);
+}
+
+[data-theme="orca"] {
+  --accent: #e5e7eb;
+  --accent-d: #cbd5e1;
+  --accent-t: #ffffff;
+  --on-accent: #0a0a0a;
+  --accent-soft: rgba(255, 255, 255, .1);
+  --ring: rgba(255, 255, 255, .32);
+  --field-border: #737373;
+  --glow1: rgba(255, 255, 255, .04);
+  --glow2: rgba(255, 255, 255, .02);
+  --shadow: 0 2px 10px rgba(0, 0, 0, .5);
+}
+
+[data-theme="arctic"] {
+  --accent: #1d6fa5;
+  --accent-d: #175d8c;
+  --accent-t: #0b5a8a;
+  --on-accent: #ffffff;
+  --accent-soft: rgba(29, 111, 165, .1);
+  --ring: rgba(29, 111, 165, .3);
+  --field-border: #6b7f96;
+  --glow1: rgba(29, 111, 165, .08);
+  --glow2: rgba(29, 111, 165, .04);
+  --shadow: 0 2px 10px rgba(11, 27, 46, .1);
+}
+
+/* ---------- remove neon: glows, text-shadows, gradients ---------- */
+.logo-circle,
+.logo-small {
+  background: var(--card);
+  border: 1.5px solid var(--accent);
+  box-shadow: none;
+}
+
+.bg-glow { opacity: .6; }
+
+.btn-primary,
+.btn-checkout {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--shadow);
+}
+
+.btn-primary:hover,
+.btn-checkout:hover { background: var(--accent-d); }
+
+.hero-card {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.card { box-shadow: var(--shadow); }
+
+.bottom-nav { box-shadow: 0 -1px 0 var(--border); }
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* ---------- soft tints that used to be neon blue ---------- */
+.numpad:active { background: var(--accent-soft); }
+.x-btn { background: var(--accent-soft); }
+.dlg-ic { background: var(--accent-soft); }
+
+.theme-opt.on,
+.emoji-grid button.on,
+.av-opt.on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* ---------- forms: visible edges (3:1), clear focus ---------- */
+.text-input,
+#app input[type=text],
+#app input[type=number],
+#app select {
+  border: 1.5px solid var(--field-border);
+  background: var(--card2);
+  color: var(--text);
+  border-radius: 12px;
+}
+
+.text-input:focus,
+#app input[type=text]:focus,
+#app input[type=number]:focus,
+#app select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.btn-ghost { border-color: var(--field-border); }
+
+::placeholder { color: var(--muted); opacity: 1; }
+
+/* ---------- navigation: pill indicator, not a glowing bar ---------- */
+.navbtn { font-weight: 600; }
+
+.navbtn.active {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.navbtn.active::before { display: none; }
+
+.navbtn svg {
+  box-sizing: content-box;
+  padding: 4px 16px;
+  border-radius: 999px;
+  transition: background .15s ease;
+}
+
+.navbtn.active svg {
+  background: var(--accent-soft);
+  color: var(--accent-t);
+}
+
+/* ---------- checkout: always readable over products ---------- */
+.checkout-bar {
+  background: linear-gradient(to top, var(--bg) 55%, transparent);
+}
+
+.btn-checkout {
+  min-height: 56px;
+  font-variant-numeric: tabular-nums;
+}
+
+#coCount { font-weight: 600; opacity: .85; }
+
+/* ---------- numbers line up ---------- */
+.r-amt,
+.hero-big,
+#coTotal,
+.tx,
+.numpad { font-variant-numeric: tabular-nums; }
+
+/* ---------- products ---------- */
+.pcard { border-radius: 16px; }
+
+@media (hover: hover) {
+  .pcard:hover { border-color: var(--accent); }
+}
+
+/* ---------- contrast fixes ---------- */
+.footer-note {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+[data-theme="arctic"] .error-msg,
+[data-theme="arctic"] .acct-del,
+[data-theme="arctic"] .dlg-ic.danger { color: #b91c1c; }
+
+.toast.ok { background: var(--green); color: #052e16; }
+
+/* ---------- system status pill (online / offline) ---------- */
+.header-sub {
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 4px;
+}
+
+.net-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.net-pill i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.net-pill[data-state="offline"] i { background: var(--accent2); }
+
+@media (max-width: 420px) {
+  .net-pill b { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .net-pill { padding: 5px; }
+}
+
+/* ---------- keyboard focus: clear but not loud ---------- */
+:focus-visible {
+  outline: 2px solid var(--accent-t);
+  outline-offset: 2px;
+}

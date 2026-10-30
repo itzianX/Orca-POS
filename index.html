@@ -78,10 +78,13 @@
           <div class="logo-small"><svg width="26" height="26"><use href="#orca" /></svg></div>
           <div>
             <div class="header-brand">ORCA <span>STORE</span></div>
-            <div class="header-sub">Mini POS · Offline</div>
+            <div class="header-sub"><span id="netPill" class="net-pill" role="status" data-state="online"><i aria-hidden="true"></i><b>Online</b></span></div>
           </div>
         </div>
         <div class="header-right">
+          <button id="installBtn" class="icon-btn labeled bigbtn" hidden title="Install ORCA POS on this device" aria-label="Install app">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg><span>Install</span>
+          </button>
           <button id="userChip" class="user-chip bigbtn" title="Settings">
             <span id="userAvatar" class="user-avatar">?</span>
             <span id="userName" class="user-name">Staff</span>
@@ -99,7 +102,7 @@
 
     <main id="view" class="view"></main>
 
-    <nav class="bottom-nav">
+    <nav class="bottom-nav" aria-label="Main">
       <div class="nav-inner">
         <button class="navbtn active" data-view="store"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5M4 9v11h16V9M9 13h6" /></svg>Sell</button>
         <button class="navbtn" data-view="add"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></svg>Items</button>
@@ -123,6 +126,42 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="app.js"></script>
+  <script>
+    /* UX helpers: connection status, install button, nav accessibility */
+    (function () {
+      var pill = document.getElementById('netPill');
+      function setNet() {
+        var on = navigator.onLine;
+        pill.dataset.state = on ? 'online' : 'offline';
+        pill.querySelector('b').textContent = on ? 'Online' : 'Offline';
+        pill.title = on ? 'Connected. Sales also save on this device.' : 'No internet. Keep selling, sales save on this device.';
+      }
+      window.addEventListener('online', setNet);
+      window.addEventListener('offline', setNet);
+      setNet();
+
+      var deferred = null, btn = document.getElementById('installBtn');
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault(); deferred = e; btn.hidden = false;
+      });
+      btn.addEventListener('click', function () {
+        if (!deferred) return;
+        deferred.prompt();
+        deferred.userChoice.then(function () { deferred = null; btn.hidden = true; });
+      });
+      window.addEventListener('appinstalled', function () { btn.hidden = true; });
+
+      var nav = document.querySelector('.bottom-nav');
+      function sync() {
+        nav.querySelectorAll('.navbtn').forEach(function (b) {
+          if (b.classList.contains('active')) b.setAttribute('aria-current', 'page');
+          else b.removeAttribute('aria-current');
+        });
+      }
+      new MutationObserver(sync).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
+      sync();
+    })();
+  </script>
 </body>
 
 </html>
