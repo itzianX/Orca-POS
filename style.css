@@ -2865,7 +2865,12 @@ body {
   background: rgba(239, 68, 68, .12);
 }
 
-[data-theme="arctic"] .pc-del {
+[data-theme="arctic"] .logo-small svg,
+[data-theme="arctic"] .logo-circle svg,
+[data-theme="arctic"] .logo-small use,
+[data-theme="arctic"] .logo-circle use {
+  filter: invert(1);
+}
   color: #b91c1c;
   border-color: rgba(185, 28, 28, .5);
 }
