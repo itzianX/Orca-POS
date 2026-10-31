@@ -650,6 +650,42 @@ select {
   color-scheme: light;
 }
 
+[data-theme="christmas"] {
+  --accent: #dc2626;
+  --accent-d: #16a34a;
+  --accent-t: #f87171;
+  --bg: #0a1a0f;
+  --card: #14261a;
+  --card2: #1e3a28;
+  --text: #fef2f2;
+  --text2: #bbf7d0;
+  --muted: #86efac;
+  --border: rgba(220, 38, 38, .25);
+  --nav: #14261a;
+  --header-bg: rgba(10, 26, 15, .92);
+  --glow1: rgba(220, 38, 38, .22);
+  --glow2: rgba(22, 163, 74, .15);
+  color-scheme: dark;
+}
+
+[data-theme="mint"] {
+  --accent: #34d399;
+  --accent-d: #10b981;
+  --accent-t: #6ee7b7;
+  --bg: #0a1a12;
+  --card: #12261c;
+  --card2: #1a3326;
+  --text: #d1fae5;
+  --text2: #a7f3d0;
+  --muted: #6b8f7a;
+  --border: rgba(52, 211, 153, .2);
+  --nav: #12261c;
+  --header-bg: rgba(10, 26, 18, .92);
+  --glow1: rgba(52, 211, 153, .22);
+  --glow2: rgba(56, 189, 248, .12);
+  color-scheme: dark;
+}
+
 .btn-primary,
 .btn-checkout {
   background: linear-gradient(135deg, var(--accent), var(--accent-d));
@@ -1045,6 +1081,14 @@ textarea {
 .tp-arctic i:last-child {
   background: #fff;
 }
+
+.tp-christmas { background: #0a1a0f; }
+.tp-christmas i { background: #dc2626; }
+.tp-christmas i:last-child { background: #bbf7d0; }
+
+.tp-mint { background: #0a1a12; }
+.tp-mint i { background: #34d399; }
+.tp-mint i:last-child { background: #d1fae5; }
 
 /* ---------- admin: product / staff rows ---------- */
 .sec-h {
@@ -2819,3 +2863,5 @@ body {
   color: #b91c1c;
   border-color: rgba(185, 28, 28, .5);
 }
+[data-theme="halloween"] .logo-small, [data-theme="halloween"] .logo-circle { position: relative; }
+[data-theme="halloween"] .logo-small::after, [data-theme="halloween"] .logo-circle::after { content: "??"; position: absolute; top: -6px; right: -6px; font-size: 14px; }

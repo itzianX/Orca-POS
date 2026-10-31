@@ -123,7 +123,7 @@
 
   // ---------- profiles: just a typed name, no sign-in ----------
   var deferredInstall = null;
-  var THEMES = [["abyss", "Abyss", "Deep-sea navy", "#0b1120"], ["orca", "Orca", "Black & white", "#050505"], ["arctic", "Arctic", "Light ice", "#e8f1f9"]];
+  var THEMES = [["abyss", "Abyss", "Deep-sea navy", "#0b1120"], ["orca", "Orca", "Black & white", "#050505"], ["arctic", "Arctic", "Light ice", "#e8f1f9"], ["christmas", "Christmas", "Festive red & green", "#0a1a0f"], ["mint", "Mint", "Fresh green", "#0a1a12"]];
   function toast(msg, kind) {
     var t = document.getElementById("toast"); if (!t) return;
     t.textContent = msg; t.classList.toggle("ok", kind === "ok"); t.classList.add("show");
@@ -349,8 +349,8 @@
       card.className = "pcard";
       card.style.cssText = "background:var(--card);border:2px solid " + (qty ? "var(--accent)" : "var(--border)") + ";border-radius:16px;padding:10px;text-align:center;position:relative;";
       card.innerHTML = (qty ? '<span style="position:absolute;top:-8px;right:-8px;background:var(--accent);color:var(--on-accent);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">' + qty + '</span>' : '') +
-        '<div style="height:64px;border-radius:12px;overflow:hidden;margin-bottom:8px;border:1px solid rgba(255,255,255,.08);">' + prodThumb(p, 22) + '</div>' +
-        '<div style="font-size:12px;font-weight:700;line-height:1.2;margin-bottom:5px;min-height:30px;display:flex;align-items:center;justify-content:center;">' + p.name + '</div>' +
+        '<div style="height:48px;border-radius:12px;overflow:hidden;margin-bottom:8px;border:1px solid rgba(255,255,255,.08);">' + prodThumb(p, 22) + '</div>' +
+        '<div style="font-size:15px;font-weight:800;line-height:1.2;margin-bottom:5px;min-height:34px;display:flex;align-items:center;justify-content:center;">' + p.name + '</div>' +
         '<div style="font-size:15px;font-weight:800;color:var(--accent-t);">' + money(Number(p.price)) + '</div>';
       if (qty) {
         var act = document.createElement("div"); act.className = "pc-actions";
