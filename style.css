@@ -2051,6 +2051,12 @@ body {
   background: var(--accent2);
 }
 
+@media (max-width: 600px) {
+  #logoutBtn { display: none; }
+  .header-brand { justify-content: center; text-align: center; width: 100%; }
+  .net-pill { margin: 0 auto; }
+}
+
 @media (max-width: 420px) {
   .net-pill b {
     position: absolute;
