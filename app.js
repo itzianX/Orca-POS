@@ -837,7 +837,7 @@ transactions.forEach(function (t) {
   function openModal(html, center) {
     modal.className = "modal" + (center ? " center" : "");
     modal.style.display = "flex";
-    modal.innerHTML = '<div id="modalBg" style="position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);"></div><div class="pop" role="dialog" aria-modal="true" style="position:relative;background:var(--card);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:18px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;">' + html + '</div>';
+    modal.innerHTML = '<div id="modalBg" style="position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);"></div><div class="pop" role="dialog" aria-modal="true" style="position:relative;background:var(--card);border:1px solid var(--border);border-radius:24px;padding:18px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;">' + html + '</div>';
     document.getElementById("modalBg").onclick = closeModal;
   }
   function closeModal() { modal.style.display = "none"; modal.innerHTML = ""; exitOpen = false; }
