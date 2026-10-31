@@ -24,6 +24,7 @@
 </head>
 
 <body>
+  <div id="splash" class="splash" aria-hidden="true"><svg class="splash-orca bob" viewBox="0 0 120 90"><use href="#orcaCute" /></svg></div>
   <!-- shared orca logo -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <symbol id="orca" viewBox="0 0 40 40">
@@ -35,17 +36,35 @@
 
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <symbol id="orcaCute" viewBox="0 0 120 90">
-      <circle cx="30" cy="7" r="2.6" fill="#38bdf8" /><circle cx="22" cy="13" r="2" fill="#7dd3fc" /><circle cx="39" cy="11" r="1.8" fill="#7dd3fc" />
-      <path d="M60 17c1-6 5-11 11-14-1 6 0 11 4 17z" fill="#0b1120" stroke="#38bdf8" stroke-width="2" stroke-linejoin="round" />
-      <path d="M94 44c6-8 14-12 22-12-2 8-6 14-12 18 7 2 11 8 12 16-9 0-17-4-24-12z" fill="#0b1120" stroke="#38bdf8" stroke-width="2" stroke-linejoin="round" />
-      <path d="M8 52C8 28 32 14 60 17c26 3 40 18 38 36-2 18-26 28-52 26C24 77 8 68 8 52z" fill="#0b1120" stroke="#38bdf8" stroke-width="2" />
-      <path d="M12 60c10 14 40 20 66 10 8-3 14-8 18-14-4 14-26 26-52 24-16-1-28-8-32-20z" fill="#fff" />
-      <ellipse cx="42" cy="34" rx="10" ry="5.5" transform="rotate(-18 42 34)" fill="#fff" />
-      <circle cx="26" cy="45" r="6" fill="#fff" /><circle cx="27" cy="46" r="3.6" fill="#0b1120" /><circle cx="28.3" cy="44.6" r="1.3" fill="#fff" />
-      <ellipse cx="21" cy="57" rx="4" ry="2.6" fill="#fb7185" opacity=".75" />
-      <path d="M30 58q6 5 12 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" />
-      <path d="M58 62c6 2 12 6 12 14-8-1-14-6-12-14z" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" stroke-linejoin="round" />
-    </symbol>
+<defs>
+    <clipPath id="orcaBodyClip">
+      <path id="orcaBody" d="M3 53C5 36 22 20 44 20C52 20 58 21 64 22C78 26 90 33 98 39L100 45C90 56 76 72 56 76C32 78 10 70 3 53Z"/>
+    </clipPath>
+  </defs>
+  <!-- bubbles -->
+  <circle cx="14" cy="14" r="2.4" style="fill:var(--accent,#7ab8dc)" opacity=".8"/><circle cx="22" cy="7" r="1.6" style="fill:var(--accent,#7ab8dc)" opacity=".6"/>
+  <!-- dorsal fin (tall, pointed, swept back) -->
+  <path d="M58 25C61 15 68 8 78 2C77 12 81 21 88 30Z" fill="#0b1120" style="stroke:var(--accent,#7ab8dc)" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- tail flukes -->
+  <path d="M96 38C102 31 108 25 115 22C112 30 112 36 108 42C113 47 115 53 117 60C108 55 101 50 97 46Z" fill="#0b1120" style="stroke:var(--accent,#7ab8dc)" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- body: black base, white underside + flank lobe, grey saddle -->
+  <use href="#orcaBody" fill="#0b1120"/>
+  <g clip-path="url(#orcaBodyClip)">
+    <path d="M0 57C14 58 30 66 46 63C60 60 72 54 84 42C88 48 92 54 108 50L120 52L120 90L0 90Z" fill="#fff"/>
+    <path d="M66 24C74 24 84 28 92 34C84 38 74 37 67 34Z" fill="#94a3b8" opacity=".6"/>
+  </g>
+  <use href="#orcaBody" fill="none" style="stroke:var(--accent,#7ab8dc)" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- pectoral flipper -->
+  <path d="M44 62C54 62 62 70 60 80C52 78 44 72 44 62Z" fill="#0b1120" style="stroke:var(--accent,#7ab8dc)" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- white eyepatch -->
+  <ellipse cx="40" cy="33" rx="11" ry="5" transform="rotate(-25 40 33)" fill="#fff"/>
+  <!-- eye -->
+  <circle cx="23" cy="46" r="6.5" fill="#fff"/><circle cx="24" cy="47" r="4.2" fill="#0b1120"/>
+  <circle cx="25.6" cy="45.2" r="1.6" fill="#fff"/><circle cx="22.6" cy="48.6" r=".8" fill="#fff"/>
+  <!-- blush + smile -->
+  <ellipse cx="14" cy="55" rx="3.5" ry="2.3" fill="#fb7185" opacity=".8"/>
+  <path d="M9 61Q16 67 27 63" fill="none" stroke="#0b1120" stroke-width="2" stroke-linecap="round"/>
+</symbol>
   </svg>
 
   <!-- ============ WELCOME (name only, no password) ============ -->
@@ -82,10 +101,7 @@
           </div>
         </div>
         <div class="header-right">
-          <button id="installBtn" class="icon-btn labeled bigbtn" hidden title="Install ORCA POS on this device" aria-label="Install app">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg><span>Install</span>
-          </button>
-          <button id="userChip" class="user-chip bigbtn" title="Settings">
+                    <button id="userChip" class="user-chip bigbtn" title="Settings">
             <span id="userAvatar" class="user-avatar">?</span>
             <span id="userName" class="user-name">Staff</span>
           </button>
@@ -107,7 +123,7 @@
         <button class="navbtn active" data-view="store"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5M4 9v11h16V9M9 13h6" /></svg>Sell</button>
         <button class="navbtn" data-view="add"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></svg>Items</button>
         <button class="navbtn" data-view="utang"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.8-3.5 3.5-5.5 6.5-5.5s5.7 2 6.5 5.5" /><path d="M17 9l4 4M21 9l-4 4" /></svg>Utang</button>
-        <button class="navbtn" data-view="history"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>History</button>
+        <button class="navbtn" data-view="history"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V11M10 20V4M16 20v-7M22 20H2" /></svg>Sales</button>
         <button class="navbtn" data-view="calc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M8 6h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" /></svg>Calc</button>
       </div>
     </nav>
@@ -115,7 +131,7 @@
     <div id="checkoutBar" class="checkout-bar">
       <div class="checkout-inner">
         <button id="checkoutBtn" class="btn-checkout bigbtn">
-          <span id="coCount">0 items</span><span id="coTotal">₱0.00 → Checkout</span>
+          <span id="coCount">0 items</span><span id="coTotal">₱0.00 · Checkout</span>
         </button>
       </div>
     </div>
@@ -140,16 +156,6 @@
       window.addEventListener('offline', setNet);
       setNet();
 
-      var deferred = null, btn = document.getElementById('installBtn');
-      window.addEventListener('beforeinstallprompt', function (e) {
-        e.preventDefault(); deferred = e; btn.hidden = false;
-      });
-      btn.addEventListener('click', function () {
-        if (!deferred) return;
-        deferred.prompt();
-        deferred.userChoice.then(function () { deferred = null; btn.hidden = true; });
-      });
-      window.addEventListener('appinstalled', function () { btn.hidden = true; });
 
       var nav = document.querySelector('.bottom-nav');
       function sync() {

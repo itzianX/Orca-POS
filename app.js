@@ -2,7 +2,7 @@
   "use strict";
 
   var grads = ["linear-gradient(135deg,#0ea5e9,#0369a1)", "linear-gradient(135deg,#f59e0b,#b45309)", "linear-gradient(135deg,#ec4899,#9d174d)", "linear-gradient(135deg,#34d399,#047857)", "linear-gradient(135deg,#a78bfa,#6d28d9)", "linear-gradient(135deg,#fb923c,#9a3412)", "linear-gradient(135deg,#22d3ee,#0e7490)", "linear-gradient(135deg,#f43f5e,#9f1239)"];
-  var userColors = ["#38bdf8", "#f472b6", "#fbbf24", "#34d399", "#a78bfa", "#fb7185", "#22d3ee", "#4ade80", "#c084fc", "#facc15"];
+  var userColors = ["#7ab8dc", "#e79bbd", "#e5c166", "#6fcfa5", "#a99be0", "#e8909a", "#6cc6d4", "#8fd694", "#c3a0e0", "#dcc65a"];
   var denoms = [{ v: 1000, l: "₱1000" }, { v: 500, l: "₱500" }, { v: 200, l: "₱200" }, { v: 100, l: "₱100" }, { v: 50, l: "₱50" }, { v: 20, l: "₱20" }, { v: 10, l: "₱10" }, { v: 5, l: "₱5" }, { v: 1, l: "₱1" }];
   var defaultProds = [
     { name: "Sardines", price: 22, photo: null, grad: 0 }, { name: "Egg", price: 8, photo: null, grad: 1 },
@@ -37,7 +37,7 @@
     var c = cartCount();
     coBar.style.display = (currentView === "store" && c > 0) ? "block" : "none";
     document.getElementById("coCount").textContent = c + " item" + (c === 1 ? "" : "s");
-    document.getElementById("coTotal").textContent = money(cartTotal()) + " → Checkout";
+    document.getElementById("coTotal").textContent = money(cartTotal()) + " · Checkout";
   }
   function updateUserChip() {
     var av = document.getElementById("userAvatar"), nm = document.getElementById("userName");
@@ -48,7 +48,7 @@
   }
 
   // ---------- local storage (no server, works offline) ----------
-  var K = { p: "orca_products", t: "orca_transactions", u: "orca_utang", n: "orca_users", c: "orca_current", th: "orca_theme", sd: "orca_skipdel" };
+  var K = { p: "orca_products", t: "orca_transactions", u: "orca_utang", n: "orca_users", c: "orca_current", th: "orca_theme", sd: "orca_skipdel", d: "orca_daily" };
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { toast("Storage full — export a backup"); return false; } }
   function getL(t) { return t === "products" ? products : t === "transactions" ? transactions : utang; }
@@ -63,10 +63,41 @@
   }
   function updRow(t, id, patch) { getL(t).forEach(function (r) { if (String(r.id) === String(id)) Object.assign(r, patch); }); save(t); }
   function delRow(t, id) { setL(t, getL(t).filter(function (r) { return String(r.id) !== String(id); })); save(t); }
+  function emptyState(title, text) {
+    return '<div class="empty"><svg class="empty-orca" viewBox="0 0 120 90" role="img" aria-label="Orca mascot"><use href="#orcaCute"/></svg><h3>' + title + '</h3><p>' + text + '</p></div>';
+  }
+  function dayKey(d) { var x = new Date(d); return x.getFullYear() + "-" + ("0" + (x.getMonth() + 1)).slice(-2) + "-" + ("0" + x.getDate()).slice(-2); }
+  function addToDay(d, t) {
+    var amt = Number(t.total) || 0, m = t.method || "cash", hr = new Date(t.created_at || Date.now()).getHours();
+    d.total = (d.total || 0) + amt; d.count = (d.count || 0) + 1;
+    d.by = d.by || {}; d.by[m] = (d.by[m] || 0) + amt;
+    if (!d.hours) { d.hours = []; for (var i = 0; i < 24; i++) d.hours.push(0); }
+    d.hours[hr] += amt;
+    d.items = d.items || {};
+    (t.items || []).forEach(function (it) { d.items[it.name] = (d.items[it.name] || 0) + it.qty; });
+  }
+  function dayStats(key) {
+    var d = { total: 0, count: 0, by: {}, hours: [], items: {} }, i;
+    for (i = 0; i < 24; i++) d.hours.push(0);
+    var s = lsGet(K.d, {})[key];
+    if (s) {
+      d.total = s.total || 0; d.count = s.count || 0;
+      for (var m in (s.by || {})) d.by[m] = s.by[m];
+      for (i = 0; i < 24; i++) d.hours[i] = (s.hours && s.hours[i]) || 0;
+      for (var n in (s.items || {})) d.items[n] = s.items[n];
+    }
+    transactions.forEach(function (t) { if (dayKey(t.created_at || Date.now()) === key) addToDay(d, t); });
+    return d;
+  }
+  // sales older than 24h are folded into a small per-day summary (kept 30 days) before they are removed
   function purgeOld() {
-    var n = transactions.length;
-    transactions = transactions.filter(function (t) { return !t.created_at || Date.now() - new Date(t.created_at).getTime() < 864e5; });
-    if (transactions.length !== n) save("transactions");
+    var keep = [], gone = [];
+    transactions.forEach(function (t) { if (!t.created_at || Date.now() - new Date(t.created_at).getTime() < 864e5) keep.push(t); else gone.push(t); });
+    if (!gone.length) return;
+    var daily = lsGet(K.d, {});
+    gone.forEach(function (t) { var k = dayKey(t.created_at); daily[k] = daily[k] || {}; addToDay(daily[k], t); });
+    var keys = Object.keys(daily).sort(); while (keys.length > 30) delete daily[keys.shift()];
+    lsSet(K.d, daily); transactions = keep; save("transactions");
   }
   function refreshData() {
     products = lsGet(K.p, null);
@@ -250,7 +281,7 @@
     document.getElementById("exitBtn").onclick = askExit;
     document.getElementById("delAcc").onclick = function () { var n = currentUser; closeModal(); askDeleteAccount(n); };
     document.getElementById("expBtn").onclick = function () {
-      var data = { app: "orca-pos", v: 1, exported: new Date().toISOString(), products: products, transactions: transactions, utang: utang, users: lsGet(K.n, []), avatars: avMap };
+      var data = { app: "orca-pos", v: 1, exported: new Date().toISOString(), products: products, transactions: transactions, utang: utang, daily: lsGet(K.d, {}), users: lsGet(K.n, []), avatars: avMap };
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }));
       a.download = "orca-pos-backup-" + new Date().toISOString().slice(0, 10) + ".json";
@@ -264,7 +295,7 @@
           var d = JSON.parse(r.result);
           if (d.app !== "orca-pos" || !Array.isArray(d.products)) throw 0;
           if (!confirm("Replace ALL data on this device with this backup?")) return;
-          lsSet(K.p, d.products); lsSet(K.t, d.transactions || []); lsSet(K.u, d.utang || []); lsSet(K.n, d.users || []); avMap = d.avatars || {}; lsSet("orca_avatars", avMap);
+          lsSet(K.p, d.products); lsSet(K.t, d.transactions || []); lsSet(K.u, d.utang || []); lsSet(K.d, d.daily || {}); lsSet(K.n, d.users || []); avMap = d.avatars || {}; lsSet("orca_avatars", avMap);
           closeModal(); refreshData().then(function () { render(); toast("✓ Backup restored", "ok"); });
         } catch (x) { toast("That file isn’t an ORCA backup"); }
       };
@@ -296,11 +327,11 @@
       '<section class="welcome"><div class="welcome-txt"><h2>Welcome, ' + displayName(currentUser) + '!</h2><p>Tap an item to add it to your basket.</p></div><svg class="welcome-orca bob" viewBox="0 0 120 90" role="img" aria-label="A friendly orca"><use href="#orcaCute"/></svg></section>' +
       '<div style="position:relative;margin-bottom:14px;">' +
       '<svg style="color:var(--muted);position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>' +
-      '<input id="searchInput" type="text" aria-label="Search items" placeholder="Search items..." value="' + searchQuery + '" style="width:100%;box-sizing:border-box;padding:13px 14px 13px 42px;font-size:15px;border:2px solid var(--border);border-radius:14px;background:var(--card);color:var(--text);">' +
+      '<input id="searchInput" type="text" aria-label="Search items" placeholder="Search items..." value="' + esc(searchQuery) + '" style="width:100%;box-sizing:border-box;padding:13px 14px 13px 42px;font-size:15px;border:2px solid var(--border);border-radius:14px;background:var(--card);color:var(--text);">' +
       (searchQuery ? '<button id="clearSearch" class="bigbtn" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.08);border:none;color:var(--muted);width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;cursor:pointer;">×</button>' : '') +
       '</div>' +
       '<div id="pg" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;"></div>' +
-      '<div id="noMatch" style="display:none;text-align:center;padding:40px 20px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:16px;">No items match "' + searchQuery + '"</div></div>';
+      '<div id="noMatch" style="display:none;">' + emptyState("No items found", "Try a different name, or add it in Items.") + '</div></div>';
     var si = document.getElementById("searchInput");
     si.oninput = function () { searchQuery = si.value; fillGrid(); };
     var cs = document.getElementById("clearSearch"); if (cs) cs.onclick = function () { searchQuery = ""; si.value = ""; fillGrid(); };
@@ -317,7 +348,7 @@
       var card = document.createElement("div");
       card.className = "pcard";
       card.style.cssText = "background:var(--card);border:2px solid " + (qty ? "var(--accent)" : "var(--border)") + ";border-radius:16px;padding:10px;text-align:center;position:relative;";
-      card.innerHTML = (qty ? '<span style="position:absolute;top:-8px;right:-8px;background:var(--accent);color:#0b1120;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 0 12px rgba(56,189,248,.5);">' + qty + '</span>' : '') +
+      card.innerHTML = (qty ? '<span style="position:absolute;top:-8px;right:-8px;background:var(--accent);color:var(--on-accent);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">' + qty + '</span>' : '') +
         '<div style="height:64px;border-radius:12px;overflow:hidden;margin-bottom:8px;border:1px solid rgba(255,255,255,.08);">' + prodThumb(p, 22) + '</div>' +
         '<div style="font-size:12px;font-weight:700;line-height:1.2;margin-bottom:5px;min-height:30px;display:flex;align-items:center;justify-content:center;">' + p.name + '</div>' +
         '<div style="font-size:15px;font-weight:800;color:var(--accent-t);">' + money(Number(p.price)) + '</div>';
@@ -327,34 +358,50 @@
   }
 
   // ---------- CHECKOUT ----------
+  var payMethod = "cash", payRef = "", payWho = "";
+  var METHODS = [["cash", "Cash"], ["gcash", "GCash"], ["maya", "Maya"], ["utang", "Utang"]];
+  function methodLabel(m) { var x = METHODS.find(function (k) { return k[0] === m; }); return x ? x[1] : "Cash"; }
+  function cashVal() { return parseFloat(cashInput || "0") / 100; }
+  function quickAmounts(total) {
+    var c = [total];
+    [50, 100, 500, 1000].forEach(function (b) { var v = Math.ceil(total / b) * b; if (v >= total && c.indexOf(v) < 0) c.push(v); });
+    return c.slice(0, 5);
+  }
   document.getElementById("checkoutBtn").onclick = openCheckout;
   function openCheckout() {
-    cashInput = "";
+    cashInput = ""; payMethod = "cash"; payRef = ""; payWho = "";
     openModal(
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h3 style="margin:0;font-size:19px;font-weight:800;">Checkout · ' + displayName(currentUser) + '</h3><button id="xClose" class="bigbtn" style="background:rgba(56,189,248,.14);border:none;color:var(--accent-t);width:34px;height:34px;border-radius:50%;font-size:17px;font-weight:800;cursor:pointer;">×</button></div>' +
-      '<p style="margin:0 0 6px;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.1em;">Your basket · − to reduce · × to remove</p>' +
-      '<div id="coRows" style="max-height:22vh;overflow-y:auto;margin-bottom:8px;"></div>' +
-      '<div style="display:flex;justify-content:space-between;padding:10px 0;border-top:2px solid var(--border);margin-bottom:12px;"><span style="font-size:16px;font-weight:700;">TOTAL</span><span id="coTotalAmt" style="font-size:24px;font-weight:800;color:var(--accent-t);">' + money(cartTotal()) + '</span></div>' +
-      '<p style="margin:0 0 6px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.1em;">Cash received (₱):</p>' +
-      '<div id="cashDisplay" style="background:var(--card2);border:2px solid var(--accent);border-radius:14px;padding:12px;font-size:26px;font-weight:800;text-align:center;margin-bottom:10px;color:var(--accent-t);">₱0.00</div>' +
-      '<div id="changeBox" style="display:none;background:rgba(16,185,129,.1);border:2px solid #10b981;border-radius:14px;padding:10px;margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-weight:700;font-size:14px;color:#6ee7b7;">Change (Sukli)</span><span id="changeAmt" style="font-weight:800;font-size:18px;color:#34d399;">₱0.00</span></div><div id="denomBreak" style="font-size:12px;color:#6ee7b7;line-height:1.5;"></div></div>' +
-      '<div id="shortMsg" style="display:none;background:rgba(239,68,68,.12);border:2px solid #ef4444;color:#fca5a5;border-radius:14px;padding:8px;text-align:center;font-weight:700;font-size:13px;margin-bottom:10px;">Cash is short!</div>' +
-      '<div id="numpad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;"></div>' +
-      '<button id="completeSale" class="bigbtn" style="width:100%;padding:14px;border-radius:16px;border:none;background:#10b981;color:#052e16;font-size:17px;font-weight:800;cursor:pointer;opacity:.5;pointer-events:none;">Complete Sale</button>'
+      '<div class="m-head"><h3>Checkout · ' + esc(displayName(currentUser)) + '</h3><button id="xClose" class="bigbtn x-btn" aria-label="Close checkout">×</button></div>' +
+      '<div id="coRows" class="co-rows"></div>' +
+      '<div class="co-total"><span>TOTAL</span><span id="coTotalAmt">' + money(cartTotal()) + '</span></div>' +
+      '<div id="methodRow" class="pay-methods" role="radiogroup" aria-label="Payment method"></div>' +
+      '<div id="payPane"></div>' +
+      '<button id="completeSale" class="btn-sale bigbtn" disabled>Complete sale</button>'
     );
+    var mr = document.getElementById("methodRow");
+    METHODS.forEach(function (m) {
+      var b = document.createElement("button");
+      b.className = "pay-chip bigbtn" + (m[0] === payMethod ? " on" : ""); b.textContent = m[1];
+      b.setAttribute("role", "radio"); b.setAttribute("aria-checked", m[0] === payMethod);
+      b.onclick = function () {
+        payMethod = m[0];
+        Array.prototype.forEach.call(mr.children, function (x) { var on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); });
+        renderPane();
+      };
+      mr.appendChild(b);
+    });
     function renderRows() {
       var cr = document.getElementById("coRows"); if (!cr) return;
       cr.innerHTML = "";
       Object.keys(cart).forEach(function (id) {
         var p = products.find(function (x) { return String(x.id) === String(id) }); if (!p) return; var q = cart[id];
-        var row = document.createElement("div");
-        row.style.cssText = "display:flex;align-items:center;gap:8px;padding:7px 0;font-size:14px;";
-        row.innerHTML = '<span style="flex:1;">' + p.name + '</span>' +
-          '<button class="minusItem bigbtn" data-id="' + id + '" style="width:26px;height:26px;border-radius:8px;border:none;background:rgba(56,189,248,.15);color:var(--accent-t);font-size:16px;font-weight:800;cursor:pointer;line-height:1;">−</button>' +
-          '<span style="font-weight:700;min-width:20px;text-align:center;">' + q + '</span>' +
-          '<button class="plusItem bigbtn" data-id="' + id + '" style="width:26px;height:26px;border-radius:8px;border:none;background:rgba(52,211,153,.15);color:#34d399;font-size:16px;font-weight:800;cursor:pointer;line-height:1;">+</button>' +
-          '<span style="font-weight:700;min-width:62px;text-align:right;">' + money(Number(p.price) * q) + '</span>' +
-          '<button class="delItem bigbtn" data-id="' + id + '" style="width:26px;height:26px;border-radius:50%;border:none;background:rgba(239,68,68,.15);color:#f87171;font-size:13px;font-weight:800;cursor:pointer;flex-shrink:0;">×</button>';
+        var row = document.createElement("div"); row.className = "co-row";
+        row.innerHTML = '<span class="co-name">' + esc(p.name) + '</span>' +
+          '<button class="minusItem bigbtn co-btn" data-id="' + id + '" aria-label="Reduce ' + esc(p.name) + '">−</button>' +
+          '<span class="co-qty">' + q + '</span>' +
+          '<button class="plusItem bigbtn co-btn co-plus" data-id="' + id + '" aria-label="Add one ' + esc(p.name) + '">+</button>' +
+          '<span class="co-amt">' + money(Number(p.price) * q) + '</span>' +
+          '<button class="delItem bigbtn co-btn co-del" data-id="' + id + '" aria-label="Remove ' + esc(p.name) + '">×</button>';
         cr.appendChild(row);
       });
       document.getElementById("coTotalAmt").textContent = money(cartTotal());
@@ -365,47 +412,103 @@
     function afterCartChange() {
       fillGrid();
       if (cartCount() === 0) { closeModal(); updateCoBar(); return; }
-      renderRows(); updateCash(); updateCoBar();
+      renderRows(); renderPane(); updateCoBar();
     }
     renderRows();
-    var np = document.getElementById("numpad");
-    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"].forEach(function (k) {
-      var b = document.createElement("button"); b.className = "numpad"; b.textContent = k;
-      b.style.cssText = "padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card2);font-size:19px;font-weight:800;color:var(--text);";
-      if (k === "C") b.style.color = "#f87171";
-      b.onclick = function () { buzz(10); if (k === "C") cashInput = ""; else if (k === "⌫") cashInput = cashInput.slice(0, -1); else if (cashInput.length < 7) cashInput += k; updateCash(); };
-      np.appendChild(b);
-    });
     document.getElementById("xClose").onclick = closeModal;
     document.getElementById("completeSale").onclick = completeSale;
-    updateCash();
+    renderPane();
+  }
+  function renderPane() {
+    var pane = document.getElementById("payPane"); if (!pane) return;
+    var total = cartTotal();
+    if (payMethod === "cash") {
+      pane.innerHTML = '<div id="cashDisplay" class="cash-display" aria-live="polite">₱0.00</div>' +
+        '<div id="quickRow" class="quick-row"></div>' +
+        '<div id="changeBox" class="change-box" style="display:none;"><div class="change-top"><span>Change (Sukli)</span><span id="changeAmt">₱0.00</span></div><div id="denomBreak" class="denom"></div></div>' +
+        '<div id="shortMsg" class="short-msg" role="alert" style="display:none;"></div>' +
+        '<div id="numpad" class="numpad-grid"></div>';
+      var qr = document.getElementById("quickRow");
+      quickAmounts(total).forEach(function (v, i) {
+        var b = document.createElement("button"); b.className = "quick-chip bigbtn";
+        b.textContent = i === 0 ? "Exact" : "₱" + v;
+        b.onclick = function () { buzz(10); cashInput = String(Math.round(v * 100)); updateCash(); };
+        qr.appendChild(b);
+      });
+      var np = document.getElementById("numpad");
+      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"].forEach(function (k) {
+        var b = document.createElement("button"); b.className = "numpad" + (k === "C" ? " np-clear" : ""); b.textContent = k;
+        b.setAttribute("aria-label", k === "C" ? "Clear" : k === "⌫" ? "Backspace" : k);
+        b.onclick = function () { buzz(10); if (k === "C") cashInput = ""; else if (k === "⌫") cashInput = cashInput.slice(0, -1); else if (cashInput.length < 7) cashInput += k; updateCash(); };
+        np.appendChild(b);
+      });
+      updateCash();
+    } else if (payMethod === "utang") {
+      var seen = {}, opts = "";
+      utang.forEach(function (u) { if (u.debtor_name && !seen[u.debtor_name]) { seen[u.debtor_name] = 1; opts += '<option value="' + esc(u.debtor_name) + '">'; } });
+      pane.innerHTML = '<p class="m-note">Adds these items to Utang. No payment is recorded until it is paid.</p>' +
+        '<label class="field-label" for="payWho">Who owes?</label>' +
+        '<input id="payWho" class="text-input" list="debtors" maxlength="16" autocomplete="off" autocapitalize="words" placeholder="e.g. Aling Nena" value="' + esc(payWho) + '"><datalist id="debtors">' + opts + '</datalist>';
+      document.getElementById("payWho").oninput = function () { payWho = this.value; refreshComplete(); };
+      refreshComplete();
+    } else {
+      pane.innerHTML = '<div class="ewallet"><div class="ew-amt">' + money(total) + '</div>' +
+        '<p class="m-note">Ask the customer to send exactly this amount by ' + methodLabel(payMethod) + '. Confirm it arrived before completing.</p></div>' +
+        '<label class="field-label" for="payRef">Reference no. (optional)</label>' +
+        '<input id="payRef" class="text-input" inputmode="numeric" maxlength="20" autocomplete="off" placeholder="Last digits of the reference" value="' + esc(payRef) + '">';
+      document.getElementById("payRef").oninput = function () { this.value = this.value.replace(/[^0-9A-Za-z]/g, ""); payRef = this.value; };
+      refreshComplete();
+    }
+  }
+  function refreshComplete() {
+    var cs = document.getElementById("completeSale"); if (!cs) return;
+    var total = cartTotal(), ok = true, label = "Complete sale · " + money(total);
+    if (payMethod === "cash") {
+      ok = cashInput !== "" && Math.round((cashVal() - total) * 100) >= 0;
+      if (cashInput === "") label = "Enter cash received";
+      else if (!ok) label = "Cash is short";
+    } else if (payMethod === "utang") {
+      ok = !!cleanName(payWho); label = ok ? "Record utang · " + money(total) : "Enter who owes";
+    }
+    cs.disabled = !ok; cs.textContent = label;
   }
   function updateCash() {
-    var cash = parseFloat(cashInput || "0") / 100;
-    var cd = document.getElementById("cashDisplay"); if (cd) cd.textContent = money(cash);
-    var total = cartTotal(), change = cash - total;
-    var cb = document.getElementById("changeBox"), sm = document.getElementById("shortMsg"), cs = document.getElementById("completeSale");
-    if (!cb) return;
-    if (!cashInput || cash === 0) { cb.style.display = "none"; sm.style.display = "none"; cs.style.opacity = ".5"; cs.style.pointerEvents = "none"; return; }
-    if (change < 0) { cb.style.display = "none"; sm.style.display = "block"; cs.style.opacity = ".5"; cs.style.pointerEvents = "none"; return; }
-    sm.style.display = "none"; cb.style.display = "block";
-    document.getElementById("changeAmt").textContent = money(change);
-    var cents = Math.round(change * 100), parts = [];
-    denoms.forEach(function (d) { var c = Math.floor(cents / (d.v * 100)); cents = cents % (d.v * 100); if (c > 0) parts.push(c + "× " + d.l); });
-    document.getElementById("denomBreak").textContent = parts.join(" · ") || "Exact amount";
-    cs.style.opacity = "1"; cs.style.pointerEvents = "auto";
+    var cd = document.getElementById("cashDisplay"); if (!cd) return;
+    var cash = cashVal(), total = cartTotal(), diff = Math.round((cash - total) * 100);
+    cd.textContent = money(cash);
+    var cb = document.getElementById("changeBox"), sm = document.getElementById("shortMsg");
+    if (!cashInput || cash === 0) { cb.style.display = "none"; sm.style.display = "none"; }
+    else if (diff < 0) { cb.style.display = "none"; sm.style.display = "block"; sm.textContent = "Short by " + money(-diff / 100); }
+    else {
+      sm.style.display = "none"; cb.style.display = "block";
+      document.getElementById("changeAmt").textContent = money(diff / 100);
+      var cents = diff, parts = [];
+      denoms.forEach(function (d) { var c = Math.floor(cents / (d.v * 100)); cents = cents % (d.v * 100); if (c > 0) parts.push(c + "× " + d.l); });
+      document.getElementById("denomBreak").textContent = parts.join(" · ") || "Exact amount";
+    }
+    refreshComplete();
   }
   async function completeSale() {
-    var cash = parseFloat(cashInput || "0") / 100;
+    var total = cartTotal();
     var items = Object.keys(cart).map(function (id) { var p = products.find(function (x) { return String(x.id) === String(id) }); return { name: p.name, qty: cart[id], price: Number(p.price) }; });
-    var btn = document.getElementById("completeSale"); btn.textContent = "Saving..."; btn.style.pointerEvents = "none";
-    addRow("transactions", {
-      user_email: currentUser, user_name: displayName(currentUser),
-      items: items, total: cartTotal(), cash: cash, change: cash - cartTotal()
-    });
+    var btn = document.getElementById("completeSale"); btn.textContent = "Saving..."; btn.disabled = true;
+    var title, big = "", note;
+    if (payMethod === "utang") {
+      var nm = cleanName(payWho);
+      addRow("utang", { debtor_name: nm, items: items, total: total, accepted_by: currentUser, accepted_name: displayName(currentUser) });
+      title = "Utang recorded"; note = esc(nm) + " owes " + money(total);
+    } else {
+      var cash = payMethod === "cash" ? cashVal() : total, change = Math.round((cash - total) * 100) / 100;
+      addRow("transactions", { user_email: currentUser, user_name: displayName(currentUser), items: items, total: total, cash: cash, change: change, method: payMethod, ref: payRef });
+      title = "Sale complete";
+      if (payMethod === "cash") big = '<div class="chg-label">Give change</div><div class="chg-amt">' + money(change) + '</div>';
+      note = money(total) + " by " + methodLabel(payMethod) + " · kept in Sales for 24 hours";
+    }
     cart = {}; closeModal(); updateCoBar();
-    openModal('<div class="pop" style="text-align:center;padding:20px 0;"><div style="width:66px;height:66px;border-radius:50%;background:#10b981;color:#052e16;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;margin:0 auto 12px;">✓</div><h3 style="margin:0 0 4px;font-size:21px;font-weight:800;">Sale Complete!</h3><p style="margin:0 0 16px;color:var(--muted);font-size:14px;">Saved under ' + displayName(currentUser) + ' · kept in History for 24 hours</p><button id="okSale" class="bigbtn" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--accent);color:#0b1120;font-size:16px;font-weight:800;cursor:pointer;">OK</button></div>');
-    document.getElementById("okSale").onclick = function () { closeModal(); refreshData().then(function () { renderStore(); }); };
+    openModal('<div class="success"><svg class="state-orca bob" viewBox="0 0 120 90" role="img" aria-label="Happy orca"><use href="#orcaCute"/></svg><h3>' + title + '</h3>' + big + '<p class="m-note">' + note + '</p><button id="okSale" class="btn-primary bigbtn">New sale</button></div>', true);
+    var ok = document.getElementById("okSale");
+    ok.onclick = function () { closeModal(); refreshData().then(function () { renderStore(); }); };
+    ok.focus();
   }
 
   // ---------- UTANG ----------
@@ -422,14 +525,14 @@
       '<h2 style="margin:0 0 4px;font-size:21px;font-weight:800;">Utang (Credit)</h2>' +
       '<p style="margin:0 0 14px;color:var(--muted);font-size:13px;">Record who owes, pick multiple items, mark paid later.</p>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
-      '<div style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:16px;padding:16px;text-align:center;color:#0b1120;box-shadow:0 6px 18px rgba(245,158,11,.3);"><div style="font-size:22px;font-weight:800;">' + money(totalUtang) + '</div><div style="font-size:11px;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.08em;">Total Utang</div></div>' +
+      '<div style="background:#e7a43a;border-radius:16px;padding:16px;text-align:center;color:#0b1120;"><div style="font-size:22px;font-weight:800;">' + money(totalUtang) + '</div><div style="font-size:11px;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.08em;">Total Utang</div></div>' +
       '<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;text-align:center;"><div style="font-size:22px;font-weight:800;">' + utang.length + '</div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Records</div></div></div>' +
       '<div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:16px;margin-bottom:16px;">' +
       '<p style="margin:0 0 8px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.1em;">Record new utang · accepted by ' + displayName(currentUser) + '</p>' +
       '<input id="utangName" type="text" placeholder="Who owes? (e.g. Aling Nena)" maxlength="16" style="width:100%;box-sizing:border-box;padding:13px;font-size:15px;border:2px solid var(--border);border-radius:12px;margin-bottom:9px;background:var(--card2);color:var(--text);">' +
       '<button id="pickProductsBtn" class="bigbtn" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;border:2px dashed rgba(245,158,11,.5);background:rgba(245,158,11,.08);color:#fbbf24;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:9px;"><span>Tap to pick products</span><span style="background:#f59e0b;color:#0b1120;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:800;">' + (uc ? uc + " item" + (uc === 1 ? "" : "s") : "none") + '</span></button>' +
       selChips +
-      '<button id="addUtangBtn" class="bigbtn" style="width:100%;padding:13px;border-radius:14px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#0b1120;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,.35);">+ Record Utang</button>' +
+      '<button id="addUtangBtn" class="bigbtn" style="width:100%;padding:13px;border-radius:14px;border:none;background:#e7a43a;color:#0b1120;font-size:15px;font-weight:800;cursor:pointer;">+ Record Utang</button>' +
       '<p id="utangErr" style="display:none;color:#f87171;font-size:12px;margin:7px 0 0;text-align:center;font-weight:700;">Enter a name and pick at least one product</p></div>' +
       '<h3 style="margin:0 0 10px;font-size:15px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Unpaid utang · tap ✓ when paid</h3>' +
       '<div id="utangList"></div></div>';
@@ -449,7 +552,7 @@
       await refreshData(); renderUtang();
     };
     var ul = document.getElementById("utangList");
-    if (!utang.length) { ul.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:16px;">No utang recorded.</div>'; }
+    if (!utang.length) { ul.innerHTML = emptyState("No utang right now", "Nobody owes you. Record credit above when someone takes items first."); }
     utang.forEach(function (u) {
       var items = (u.items || []).map(function (i) { return i.qty + "× " + i.name; }).join(", ");
       var row = document.createElement("div");
@@ -471,11 +574,11 @@
 
   function openUtangPicker() {
     openModal(
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h3 style="margin:0;font-size:19px;font-weight:800;">Pick products</h3><button id="pickClose" class="bigbtn" style="background:rgba(56,189,248,.14);border:none;color:var(--accent-t);width:34px;height:34px;border-radius:50%;font-size:17px;font-weight:800;cursor:pointer;">×</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h3 style="margin:0;font-size:19px;font-weight:800;">Pick products</h3><button id="pickClose" class="bigbtn" style="background:var(--accent-soft);border:none;color:var(--accent-t);width:34px;height:34px;border-radius:50%;font-size:17px;font-weight:800;cursor:pointer;">×</button></div>' +
       '<p style="margin:0 0 10px;font-size:12px;color:var(--muted);">Tap + to add, − to reduce. Pick as many as you want.</p>' +
       '<div id="pickRows" style="max-height:48vh;overflow-y:auto;margin-bottom:12px;"></div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:10px 14px;background:rgba(245,158,11,.1);border:1.5px solid rgba(245,158,11,.4);border-radius:14px;"><span style="font-weight:700;font-size:14px;color:#fbbf24;">Total</span><span id="pickTotal" style="font-weight:800;font-size:20px;color:#fbbf24;">₱0.00</span></div>' +
-      '<button id="pickDone" class="bigbtn" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#0b1120;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,.35);">Done — Back to utang</button>'
+      '<button id="pickDone" class="bigbtn" style="width:100%;padding:14px;border-radius:14px;border:none;background:#e7a43a;color:#0b1120;font-size:16px;font-weight:800;cursor:pointer;">Done — Back to utang</button>'
     );
     function fillPicker() {
       var pr = document.getElementById("pickRows"); if (!pr) return;
@@ -487,7 +590,7 @@
         row.innerHTML = '<div style="width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;">' + prodThumb(p, 16) + '</div>' +
           '<span style="flex:1;font-weight:700;font-size:14px;">' + p.name + '</span>' +
           '<span style="font-weight:700;color:var(--muted);font-size:13px;min-width:52px;text-align:right;">' + money(Number(p.price)) + '</span>' +
-          '<button class="pMinus bigbtn" data-id="' + p.id + '" style="width:30px;height:30px;border-radius:9px;border:none;background:rgba(56,189,248,.15);color:var(--accent-t);font-size:17px;font-weight:800;cursor:pointer;line-height:1;flex-shrink:0;">−</button>' +
+          '<button class="pMinus bigbtn" data-id="' + p.id + '" style="width:30px;height:30px;border-radius:9px;border:none;background:var(--accent-soft);color:var(--accent-t);font-size:17px;font-weight:800;cursor:pointer;line-height:1;flex-shrink:0;">−</button>' +
           '<span style="font-weight:800;min-width:22px;text-align:center;font-size:15px;color:' + (q ? "#fbbf24" : "#475569") + ';">' + q + '</span>' +
           '<button class="pPlus bigbtn" data-id="' + p.id + '" style="width:30px;height:30px;border-radius:9px;border:none;background:rgba(52,211,153,.18);color:#34d399;font-size:17px;font-weight:800;cursor:pointer;line-height:1;flex-shrink:0;">+</button>';
         pr.appendChild(row);
@@ -509,11 +612,11 @@
       '<div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:16px;margin-bottom:16px;">' +
       '<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">' +
       '<div id="photoPreview" style="width:68px;height:68px;border-radius:16px;overflow:hidden;flex-shrink:0;border:2px dashed var(--accent);display:flex;align-items:center;justify-content:center;color:var(--accent-t);font-size:26px;font-weight:800;background:var(--card2);">?</div>' +
-      '<div style="flex:1;min-width:150px;"><label class="bigbtn" style="display:block;background:linear-gradient(135deg,var(--accent),var(--accent-d));color:#0b1120;padding:9px 14px;border-radius:12px;font-size:13px;font-weight:800;text-align:center;cursor:pointer;margin-bottom:6px;">Upload Photo<input id="photoInput" type="file" accept="image/*" style="display:none;"></label><button id="clearPhoto" class="bigbtn" style="width:100%;padding:7px;border-radius:12px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;">Use default</button></div></div>' +
+      '<div style="flex:1;min-width:150px;"><label class="bigbtn" style="display:block;background:var(--accent);color:var(--on-accent);padding:9px 14px;border-radius:12px;font-size:13px;font-weight:800;text-align:center;cursor:pointer;margin-bottom:6px;">Upload Photo<input id="photoInput" type="file" accept="image/*" style="display:none;"></label><button id="clearPhoto" class="bigbtn" style="width:100%;padding:7px;border-radius:12px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;">Use default</button></div></div>' +
       '<p style="margin:0 0 6px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.1em;">Default color:</p><div id="swatches" style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px;"></div>' +
       '<input id="newName" type="text" placeholder="Item name" style="width:100%;box-sizing:border-box;padding:13px;font-size:15px;border:2px solid var(--border);border-radius:12px;margin-bottom:9px;background:var(--card2);color:var(--text);">' +
       '<input id="newPrice" type="number" inputmode="decimal" placeholder="Price in ₱" style="width:100%;box-sizing:border-box;padding:13px;font-size:15px;border:2px solid var(--border);border-radius:12px;margin-bottom:11px;background:var(--card2);color:var(--text);">' +
-      '<button id="addBtn" class="bigbtn" style="width:100%;padding:13px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent-d));color:#0b1120;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(56,189,248,.35);">+ Add Item</button>' +
+      '<button id="addBtn" class="bigbtn" style="width:100%;padding:13px;border-radius:14px;border:none;background:var(--accent);color:var(--on-accent);font-size:15px;font-weight:800;cursor:pointer;">+ Add Item</button>' +
       '<p id="addErr" style="display:none;color:#f87171;font-size:12px;margin:7px 0 0;text-align:center;font-weight:700;">Enter name and valid price</p></div>' +
       '<h3 style="margin:0 0 10px;font-size:15px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Your items · tap to edit, × to delete</h3><div id="prodList"></div></div>';
     var sw = document.getElementById("swatches");
@@ -570,10 +673,10 @@
     var p = products.find(function (x) { return String(x.id) === String(id) }); if (!p) return;
     var editPhoto = p.photo || null, editGrad = p.grad || 0;
     openModal(
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><h3 style="margin:0;font-size:20px;font-weight:800;">Edit Item</h3><button id="xCloseE" class="bigbtn" style="background:rgba(56,189,248,.14);border:none;color:var(--accent-t);width:34px;height:34px;border-radius:50%;font-size:17px;font-weight:800;cursor:pointer;">×</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><h3 style="margin:0;font-size:20px;font-weight:800;">Edit Item</h3><button id="xCloseE" class="bigbtn" style="background:var(--accent-soft);border:none;color:var(--accent-t);width:34px;height:34px;border-radius:50%;font-size:17px;font-weight:800;cursor:pointer;">×</button></div>' +
       '<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">' +
       '<div id="editPhotoPreview" style="width:68px;height:68px;border-radius:16px;overflow:hidden;flex-shrink:0;border:2px solid var(--accent);"></div>' +
-      '<div style="flex:1;min-width:150px;"><label class="bigbtn" style="display:block;background:linear-gradient(135deg,var(--accent),var(--accent-d));color:#0b1120;padding:9px 14px;border-radius:12px;font-size:13px;font-weight:800;text-align:center;cursor:pointer;margin-bottom:6px;">Change Photo<input id="editPhotoInput" type="file" accept="image/*" style="display:none;"></label><button id="editClearPhoto" class="bigbtn" style="width:100%;padding:7px;border-radius:12px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;">Use default color</button></div></div>' +
+      '<div style="flex:1;min-width:150px;"><label class="bigbtn" style="display:block;background:var(--accent);color:var(--on-accent);padding:9px 14px;border-radius:12px;font-size:13px;font-weight:800;text-align:center;cursor:pointer;margin-bottom:6px;">Change Photo<input id="editPhotoInput" type="file" accept="image/*" style="display:none;"></label><button id="editClearPhoto" class="bigbtn" style="width:100%;padding:7px;border-radius:12px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;">Use default color</button></div></div>' +
       '<p style="margin:0 0 6px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.1em;">Default color:</p><div id="editSwatches" style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px;"></div>' +
       '<p style="margin:0 0 6px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.1em;">Item name:</p>' +
       '<input id="editName" type="text" value="' + p.name + '" style="width:100%;box-sizing:border-box;padding:13px;font-size:16px;border:2px solid var(--border);border-radius:12px;margin-bottom:12px;background:var(--card2);color:var(--text);">' +
@@ -612,23 +715,54 @@
     };
   }
 
-  // ---------- HISTORY ----------
+  // ---------- SALES: dashboard + recent orders ----------
+  function hourLabel(h) { return h === 0 ? "12a" : h < 12 ? h + "a" : h === 12 ? "12p" : (h - 12) + "p"; }
   function renderHistory() {
-    var totalSales = transactions.reduce(function (s, t) { return s + Number(t.total); }, 0);
-    view.innerHTML = '<div class="fadein"><h2 class="page-h">Sales history</h2><p class="note-bar">Sales are removed automatically after 24 hours. Utang records stay until they are paid.</p>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
-      '<div style="background:linear-gradient(135deg,var(--accent),var(--accent-d));border-radius:16px;padding:16px;text-align:center;color:#0b1120;box-shadow:0 6px 18px rgba(56,189,248,.3);"><div style="font-size:22px;font-weight:800;">' + money(totalSales) + '</div><div style="font-size:11px;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.08em;">Total Sales</div></div>' +
-      '<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;text-align:center;"><div style="font-size:22px;font-weight:800;">' + transactions.length + '</div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Transactions</div></div></div>' +
-      '<div id="histList"></div></div>';
-    var hl = document.getElementById("histList");
-    if (!transactions.length) { hl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:16px;">No sales in the last 24 hours. Complete a sale and it will show up here.</div>'; }
+    var today = dayKey(Date.now()), st = dayStats(today);
+    var avg = st.count ? st.total / st.count : 0;
+    var owed = utang.reduce(function (s, u) { return s + Number(u.total); }, 0);
+    var h = '<div class="fadein"><h2 class="page-h">Sales</h2><p class="dash-date">' + new Date().toLocaleDateString("en-PH", { weekday: "long", month: "short", day: "numeric" }) + '</p>' +
+      '<section class="dash-hero"><div class="dash-lbl">Sales today</div><div class="dash-big">' + money(st.total) + '</div><div class="dash-sub">' + st.count + ' order' + (st.count === 1 ? "" : "s") + ' · Avg ' + money(avg) + '</div></section>' +
+      '<div class="stat-grid"><div class="stat"><div class="stat-v">' + money(st.by.cash || 0) + '</div><div class="stat-l">Cash sales</div></div>' +
+      '<div class="stat"><div class="stat-v warn">' + money(owed) + '</div><div class="stat-l">Unpaid utang</div></div></div>';
+    if (!st.count) {
+      h += emptyState("No sales yet today", "Complete a sale and it will show up here.");
+    } else {
+      var ms = METHODS.filter(function (m) { return m[0] !== "utang" && st.by[m[0]]; });
+      if (ms.length) h += '<div class="card-box"><h3 class="card-h">By payment method</h3>' + ms.map(function (m) { return '<div class="m-row"><span>' + m[1] + '</span><b>' + money(st.by[m[0]]) + '</b></div>'; }).join("") + '</div>';
+      var first = 8, last = 18, max = 0, peak = -1;
+      st.hours.forEach(function (v, i) { if (v > 0) { first = Math.min(first, i); last = Math.max(last, i); } if (v > max) { max = v; peak = i; } });
+      var bars = "";
+      for (var i = first; i <= last; i++) {
+        var v = st.hours[i], pct = max ? Math.round(v / max * 100) : 0;
+        bars += '<div class="bar-col" title="' + hourLabel(i) + ' · ' + money(v) + '"><div class="bar-track"><div class="bar-fill' + (i === peak ? " peak" : "") + '" style="height:' + (v > 0 ? Math.max(pct, 6) : 0) + '%"></div></div><span class="bar-x">' + (i % 3 === 0 ? hourLabel(i) : "&nbsp;") + '</span></div>';
+      }
+      h += '<div class="card-box"><h3 class="card-h">Sales by hour' + (peak >= 0 ? ' <small>Busiest: ' + hourLabel(peak) + '</small>' : '') + '</h3><div class="bars">' + bars + '</div></div>';
+      var top = Object.keys(st.items).map(function (n) { return [n, st.items[n]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5);
+      var mq = top.length ? top[0][1] : 1;
+      h += '<div class="card-box"><h3 class="card-h">Top items</h3>' + top.map(function (t) { return '<div class="hrow"><span class="hr-n">' + esc(t[0]) + '</span><span class="hr-bar"><i style="width:' + Math.round(t[1] / mq * 100) + '%"></i></span><b>' + t[1] + '</b></div>'; }).join("") + '</div>';
+    }
+    var days = [], wmax = 0, any = false;
+    for (var d = 6; d >= 0; d--) {
+      var dt = new Date(); dt.setDate(dt.getDate() - d);
+      var tot = dayStats(dayKey(dt)).total; if (tot > 0) any = true; wmax = Math.max(wmax, tot);
+      days.push({ l: dt.toLocaleDateString("en-PH", { weekday: "short" }), t: tot, now: d === 0 });
+    }
+    if (any) h += '<div class="card-box"><h3 class="card-h">Last 7 days</h3><div class="bars">' + days.map(function (x) {
+      return '<div class="bar-col" title="' + x.l + ' · ' + money(x.t) + '"><div class="bar-track"><div class="bar-fill' + (x.now ? " peak" : "") + '" style="height:' + (x.t > 0 ? Math.max(Math.round(x.t / wmax * 100), 6) : 0) + '%"></div></div><span class="bar-x">' + x.l + '</span></div>';
+    }).join("") + '</div></div>';
+    if (transactions.length) h += '<h3 class="card-h list-h">Recent orders</h3><div id="histList"></div>';
+    h += '<p class="note-bar">Order details are kept for 24 hours. Daily totals are kept for 30 days. Utang stays until it is paid.</p></div>';
+    view.innerHTML = h;
+    var hl = document.getElementById("histList"); if (!hl) return;
     transactions.forEach(function (t) {
-      var items = t.items.map(function (i) { return i.qty + "× " + i.name; }).join(", ");
-      var row = document.createElement("div");
-      row.style.cssText = "background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:9px;";
-      row.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;flex-wrap:wrap;gap:4px;"><span style="display:flex;align-items:center;gap:7px;font-weight:800;font-size:14px;"><span style="width:24px;height:24px;border-radius:50%;background:' + ucolor(t.user_name || t.user_email) + ';color:#0b1120;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;">' + avTxt((t.user_name || "S")) + '</span>' + (t.user_name || "Staff") + '</span><span style="font-weight:800;color:var(--accent-t);font-size:17px;">' + money(Number(t.total)) + '</span></div>' +
-        '<div style="font-size:13px;line-height:1.5;margin-bottom:4px;color:var(--text2);">' + items + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);">' + (t.created_at ? new Date(t.created_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "") + ' · Cash ' + money(Number(t.cash)) + ' · Change ' + money(Number(t.change)) + '</div>';
+      var items = t.items.map(function (i) { return i.qty + "× " + esc(i.name); }).join(", ");
+      var m = t.method || "cash";
+      var pay = m === "cash" ? "Cash " + money(Number(t.cash)) + " · Change " + money(Number(t.change)) : methodLabel(m) + (t.ref ? " · Ref " + esc(t.ref) : "");
+      var row = document.createElement("div"); row.className = "order-row";
+      row.innerHTML = '<div class="or-top"><span class="or-who"><span class="or-av" style="background:' + ucolor(t.user_name || t.user_email) + '">' + avTxt((t.user_name || "S")) + '</span>' + esc(t.user_name || "Staff") + '</span><span class="or-amt">' + money(Number(t.total)) + '</span></div>' +
+        '<div class="or-items">' + items + '</div>' +
+        '<div class="or-meta"><span class="m-badge">' + methodLabel(m) + '</span>' + (t.created_at ? new Date(t.created_at).toLocaleString("en-PH", { hour: "numeric", minute: "2-digit" }) : "") + ' · ' + pay + '</div>';
       hl.appendChild(row);
     });
   }
@@ -637,7 +771,7 @@
   var calcDisp = "0", calcPrev = null, calcOp = null, calcFresh = true;
   function renderCalc() {
     view.innerHTML = '<div class="fadein" style="max-width:420px;margin:0 auto;"><h2 style="margin:0 0 12px;font-size:21px;font-weight:800;">Calculator</h2>' +
-      '<div id="calcScreen" style="background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:20px 16px;font-size:36px;font-weight:800;text-align:right;margin-bottom:12px;min-height:54px;word-break:break-all;line-height:1.2;color:var(--accent-t);box-shadow:0 0 24px rgba(56,189,248,.15);">0</div>' +
+      '<div id="calcScreen" style="background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:20px 16px;font-size:36px;font-weight:800;text-align:right;margin-bottom:12px;min-height:54px;word-break:break-all;line-height:1.2;color:var(--accent-t);box-shadow:0 0 24px var(--accent-soft);">0</div>' +
       '<div id="calcPad" style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;"></div></div>';
     var pad = document.getElementById("calcPad");
     var keys = [["C", "#f87171"], ["⌫", "#fbbf24"], ["%", "var(--accent)"], ["÷", "var(--accent)"], ["7"], ["8"], ["9"], ["×", "var(--accent)"], ["4"], ["5"], ["6"], ["−", "var(--accent)"], ["1"], ["2"], ["3"], ["+", "var(--accent)"], ["0", "", "span2"], [".", ""], ["=", "#10b981"]];
@@ -706,6 +840,7 @@
   }
   if (navigator.storage && navigator.storage.persist) { navigator.storage.persist().catch(function () { }); }
   applyTheme(lsGet(K.th, "abyss"));
+  var splash = document.getElementById("splash"); if (splash) { splash.classList.add("done"); setTimeout(function () { splash.remove(); }, 350); }
   var lastUser = lsGet(K.c, null);
   if (lastUser) startSession(lastUser); else showWelcome();
 })();
