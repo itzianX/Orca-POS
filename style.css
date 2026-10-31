@@ -1781,7 +1781,7 @@ body {
   box-shadow: 0 0 0 3px rgba(56, 189, 248, .25);
 }
 
-/* toast */
+body { touch-action: manipulation; }
 .toast {
   font-size: 14px;
 }
