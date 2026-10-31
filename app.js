@@ -330,7 +330,7 @@
       '<input id="searchInput" type="text" aria-label="Search items" placeholder="Search items..." value="' + esc(searchQuery) + '" style="width:100%;box-sizing:border-box;padding:13px 14px 13px 42px;font-size:15px;border:2px solid var(--border);border-radius:14px;background:var(--card);color:var(--text);">' +
       (searchQuery ? '<button id="clearSearch" class="bigbtn" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.08);border:none;color:var(--muted);width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;cursor:pointer;">×</button>' : '') +
       '</div>' +
-      '<div id="pg" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;"></div>' +
+      '<div id="pg" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;"></div>' +
       '<div id="noMatch" style="display:none;">' + emptyState("No items found", "Try a different name, or add it in Items.") + '</div></div>';
     var si = document.getElementById("searchInput");
     si.oninput = function () { searchQuery = si.value; fillGrid(); };
