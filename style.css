@@ -2881,3 +2881,6 @@ body { touch-action: manipulation; }
 .stepper-btn { min-width:30px;min-height:28px;border-radius:8px;border:1.5px solid var(--field-border);background:transparent;color:var(--text);font-size:18px;font-weight:800;cursor:pointer;line-height:1; }
 
 @media (max-width: 600px) { #logoutBtn { display: none; } }
+
+.stepper-btn:active { transform: scale(.85); transition: transform .1s; }
+.delProd, .delOrder, .rmUtangItem, .pc-del { color: #f87171 !important; }

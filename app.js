@@ -623,7 +623,7 @@ await refreshData(); renderAdd();
   }
   function doDeleteItem(p) {
     delRow("products", p.id); delete cart[p.id]; delete utangCart[p.id];
-    refreshData().then(function () { renderAdd(); updateCoBar(); toast("✓ “" + p.name + "” was deleted", "ok"); });
+    refreshData().then(function () { renderAdd(); updateCoBar(); toast(p.name + " was deleted", "ok"); });
   }
 
   function editProduct(id) {
