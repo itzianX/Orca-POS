@@ -352,7 +352,7 @@ card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
         '<div style="width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,.08);">' + prodThumb(p, 14) + '</div>' +
         '<div style="flex:1;min-width:0;">' +
         '<div style="font-size:13px;font-weight:900;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + p.name + '</div>' +
-        '<div style="font-size:12px;font-weight:800;color:var(--accent-t);margin-top:2px;">' + money(Number(p.price)) + '</div>' +
+        '<div style="font-size:12px;font-weight:800;color:var(--accent-t);margin-top:2px;">' + money(Number(p.price)) + (p.stock != null ? ' · Left: ' + p.stock : '') + '</div>' +
         '</div></div>' +
         '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;">' +
         '<button class="stepper-btn minus bigbtn" aria-label="Reduce ' + esc(p.name) + '">−</button>' +
@@ -456,8 +456,10 @@ card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
     var total = cartTotal(), cash = cashVal(), change = Math.round((cash - total) * 100) / 100;
     var items = Object.keys(cart).map(function (id) { var p = products.find(function (x) { return String(x.id) === String(id) }); return { name: p.name, qty: cart[id], price: Number(p.price) }; });
     var btn = document.getElementById("completeSale"); btn.textContent = "Saving..."; btn.disabled = true;
-    addRow("transactions", { user_email: currentUser, user_name: displayName(currentUser), items: items, total: total, cash: cash, change: change, method: "cash" });
-    cart = {}; closeModal(); updateCoBar();
+addRow("transactions", { user_email: currentUser, user_name: displayName(currentUser), items: items, total: total, cash: cash, change: change, method: "cash" });
+Object.keys(cart).forEach(function (id) { var p = products.find(function (x) { return String(x.id) === String(id); }); if (p && p.stock != null) { p.stock = Math.max(0, Number(p.stock) - cart[id]); } });
+save("products");
+cart = {}; closeModal(); updateCoBar();
     openModal('<div class="success"><svg class="state-orca bob" viewBox="0 0 120 90" role="img" aria-label="Happy orca"><use href="#orcaCute"/></svg><h3>Sale complete</h3><div class="chg-label">Give change</div><div class="chg-amt">' + money(change) + '</div><p class="m-note">' + money(total) + ' sale · kept in Sales for 24 hours</p><button id="okSale" class="btn-primary bigbtn">New sale</button></div>', true);
     var ok = document.getElementById("okSale");
     ok.onclick = function () { closeModal(); refreshData().then(function () { renderStore(); }); };
@@ -569,6 +571,7 @@ card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
       '<p style="margin:0 0 6px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.1em;">Default color:</p><div id="swatches" style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px;"></div>' +
       '<input id="newName" type="text" placeholder="Item name" style="width:100%;box-sizing:border-box;padding:13px;font-size:15px;border:2px solid var(--border);border-radius:12px;margin-bottom:9px;background:var(--card2);color:var(--text);">' +
       '<input id="newPrice" type="number" inputmode="decimal" placeholder="Price in ₱" style="width:100%;box-sizing:border-box;padding:13px;font-size:15px;border:2px solid var(--border);border-radius:12px;margin-bottom:11px;background:var(--card2);color:var(--text);">' +
+      '<input id="newStock" type="number" inputmode="numeric" placeholder="Stock (optional)" style="width:100%;box-sizing:border-box;padding:13px;font-size:15px;border:2px solid var(--border);border-radius:12px;margin-bottom:11px;background:var(--card2);color:var(--text);">' +
       '<button id="addBtn" class="bigbtn" style="width:100%;padding:13px;border-radius:14px;border:none;background:var(--accent);color:var(--on-accent);font-size:15px;font-weight:800;cursor:pointer;">+ Add Item</button>' +
       '<p id="addErr" style="display:none;color:#f87171;font-size:12px;margin:7px 0 0;text-align:center;font-weight:700;">Enter name and valid price</p></div>' +
       '<h3 style="margin:0 0 10px;font-size:15px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Your items · tap to edit, × to delete</h3><div id="prodList"></div></div>';
@@ -588,10 +591,10 @@ card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
     document.getElementById("photoInput").onchange = function (e) { var f = e.target.files[0]; if (!f) return; var r = new FileReader(); r.onload = function (ev) { var img = new Image(); img.onload = function () { var c = document.createElement("canvas"); var sz = 120; var sc = Math.min(sz / img.width, sz / img.height); c.width = img.width * sc; c.height = img.height * sc; c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); selectedPhoto = c.toDataURL("image/jpeg", .7); refreshPP(); }; img.src = ev.target.result; }; r.readAsDataURL(f); };
     document.getElementById("clearPhoto").onclick = function () { selectedPhoto = null; document.getElementById("photoInput").value = ""; refreshPP(); };
     document.getElementById("addBtn").onclick = async function () {
-      var nm = document.getElementById("newName").value.trim(); var pr = parseFloat(document.getElementById("newPrice").value);
-      if (!nm || !pr || pr <= 0) { document.getElementById("addErr").style.display = "block"; return; }
-      var btn = document.getElementById("addBtn"); btn.textContent = "Saving..."; btn.style.pointerEvents = "none";
-addRow("products", { name: nm.charAt(0).toUpperCase() + nm.slice(1), price: Math.round(pr * 100) / 100, photo: selectedPhoto, grad: selectedGrad });
+var nm = document.getElementById("newName").value.trim(); var pr = parseFloat(document.getElementById("newPrice").value); var st = parseInt(document.getElementById("newStock").value, 10);
+if (!nm || !pr || pr <= 0) { document.getElementById("addErr").style.display = "block"; return; }
+var btn = document.getElementById("addBtn"); btn.textContent = "Saving..."; btn.style.pointerEvents = "none";
+addRow("products", { name: nm.charAt(0).toUpperCase() + nm.slice(1), price: Math.round(pr * 100) / 100, photo: selectedPhoto, grad: selectedGrad, stock: isNaN(st) ? null : st });
 buzz(12); toast("✓ Item added successfully", "ok");
 await refreshData(); renderAdd();
     };
