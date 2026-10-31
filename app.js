@@ -330,7 +330,7 @@
       '<input id="searchInput" type="text" aria-label="Search items" placeholder="Search items..." value="' + esc(searchQuery) + '" style="width:100%;box-sizing:border-box;padding:13px 14px 13px 42px;font-size:15px;border:2px solid var(--border);border-radius:14px;background:var(--card);color:var(--text);">' +
       (searchQuery ? '<button id="clearSearch" class="bigbtn" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.08);border:none;color:var(--muted);width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;cursor:pointer;">×</button>' : '') +
       '</div>' +
-      '<div id="pg" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;"></div>' +
+      '<div id="pg" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;"></div>' +
       '<div id="noMatch" style="display:none;">' + emptyState("No items found", "Try a different name, or add it in Items.") + '</div></div>';
     var si = document.getElementById("searchInput");
     si.oninput = function () { searchQuery = si.value; fillGrid(); };
@@ -347,23 +347,20 @@
       var qty = cart[p.id] || 0;
       var card = document.createElement("div");
       card.className = "pcard";
-      card.style.cssText = "background:var(--card);border:2px solid " + (qty ? "var(--accent)" : "var(--border)") + ";border-radius:16px;padding:10px;text-align:center;position:relative;";
-card.innerHTML = '<div style="height:64px;border-radius:12px;overflow:hidden;margin-bottom:8px;border:1px solid rgba(255,255,255,.08);">' + prodThumb(p, 22) + '</div>' +
-        '<div style="font-size:15px;font-weight:900;line-height:1.1;margin-bottom:8px;text-align:center;min-height:34px;display:flex;align-items:center;justify-content:center;">' + p.name + '</div>' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
-        '<div style="font-size:14px;font-weight:800;color:var(--accent-t);">' + money(Number(p.price)) + '</div>' +
-        '<div class="pc-actions" style="display:flex;gap:6px;min-height:36px;"></div></div>';
-      var act = card.querySelector(".pc-actions");
-      var minus = document.createElement("button");
-      minus.className = "pc-btn pc-minus bigbtn"; minus.setAttribute("aria-label", "Reduce " + esc(p.name));
-      minus.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>';
-      minus.onclick = function (e) { e.stopPropagation(); buzz(10); if (cart[p.id]) { cart[p.id]--; if (cart[p.id] <= 0) delete cart[p.id]; fillGrid(); updateCoBar(); } };
-      var plus = document.createElement("button");
-      plus.className = "pc-btn pc-plus bigbtn"; plus.setAttribute("aria-label", "Add " + esc(p.name));
-      plus.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-      plus.onclick = function (e) { e.stopPropagation(); buzz(10); cart[p.id] = (cart[p.id] || 0) + 1; fillGrid(); updateCoBar(); };
-      act.appendChild(minus);
-      act.appendChild(plus);
+      card.style.cssText = "background:var(--card);border:2px solid " + (qty ? "var(--accent)" : "var(--border)") + ";border-radius:12px;padding:6px;text-align:center;position:relative;";
+card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<div style="width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,.08);">' + prodThumb(p, 14) + '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:900;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + p.name + '</div>' +
+        '<div style="font-size:12px;font-weight:800;color:var(--accent-t);margin-top:2px;">' + money(Number(p.price)) + '</div>' +
+        '</div></div>' +
+        '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;">' +
+        '<button class="stepper-btn minus bigbtn" aria-label="Reduce ' + esc(p.name) + '">−</button>' +
+        '<span style="min-width:22px;text-align:center;font-weight:900;font-size:14px;">' + (qty || 0) + '</span>' +
+        '<button class="stepper-btn plus bigbtn" aria-label="Add ' + esc(p.name) + '">+</button>' +
+        '</div>';
+      card.querySelector(".minus").onclick = function (e) { e.stopPropagation(); buzz(10); if (cart[p.id]) { cart[p.id]--; if (cart[p.id] <= 0) delete cart[p.id]; fillGrid(); updateCoBar(); } };
+      card.querySelector(".plus").onclick = function (e) { e.stopPropagation(); buzz(10); cart[p.id] = (cart[p.id] || 0) + 1; fillGrid(); updateCoBar(); };
       card.onclick = function () { cart[p.id] = (cart[p.id] || 0) + 1; fillGrid(); updateCoBar(); };
       grid.appendChild(card);
     });

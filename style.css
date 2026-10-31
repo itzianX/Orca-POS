@@ -2876,3 +2876,5 @@ body {
 }
 [data-theme="halloween"] .logo-small, [data-theme="halloween"] .logo-circle { position: relative; }
 [data-theme="halloween"] .logo-small::after, [data-theme="halloween"] .logo-circle::after { content: "??"; position: absolute; top: -6px; right: -6px; font-size: 14px; }
+
+.stepper-btn { min-width:30px;min-height:28px;border-radius:8px;border:1.5px solid var(--field-border);background:transparent;color:var(--text);font-size:18px;font-weight:800;cursor:pointer;line-height:1; }
