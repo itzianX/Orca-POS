@@ -357,10 +357,7 @@
     });
   }
 
-  // ---------- CHECKOUT ----------
-  var payMethod = "cash", payRef = "", payWho = "";
-  var METHODS = [["cash", "Cash"], ["gcash", "GCash"], ["maya", "Maya"], ["utang", "Utang"]];
-  function methodLabel(m) { var x = METHODS.find(function (k) { return k[0] === m; }); return x ? x[1] : "Cash"; }
+  // ---------- CHECKOUT (cash only) ----------
   function cashVal() { return parseFloat(cashInput || "0") / 100; }
   function quickAmounts(total) {
     var c = [total];
@@ -369,27 +366,14 @@
   }
   document.getElementById("checkoutBtn").onclick = openCheckout;
   function openCheckout() {
-    cashInput = ""; payMethod = "cash"; payRef = ""; payWho = "";
+    cashInput = "";
     openModal(
       '<div class="m-head"><h3>Checkout · ' + esc(displayName(currentUser)) + '</h3><button id="xClose" class="bigbtn x-btn" aria-label="Close checkout">×</button></div>' +
       '<div id="coRows" class="co-rows"></div>' +
       '<div class="co-total"><span>TOTAL</span><span id="coTotalAmt">' + money(cartTotal()) + '</span></div>' +
-      '<div id="methodRow" class="pay-methods" role="radiogroup" aria-label="Payment method"></div>' +
       '<div id="payPane"></div>' +
-      '<button id="completeSale" class="btn-sale bigbtn" disabled>Complete sale</button>'
+      '<button id="completeSale" class="btn-sale bigbtn" disabled>Enter cash received</button>'
     );
-    var mr = document.getElementById("methodRow");
-    METHODS.forEach(function (m) {
-      var b = document.createElement("button");
-      b.className = "pay-chip bigbtn" + (m[0] === payMethod ? " on" : ""); b.textContent = m[1];
-      b.setAttribute("role", "radio"); b.setAttribute("aria-checked", m[0] === payMethod);
-      b.onclick = function () {
-        payMethod = m[0];
-        Array.prototype.forEach.call(mr.children, function (x) { var on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); });
-        renderPane();
-      };
-      mr.appendChild(b);
-    });
     function renderRows() {
       var cr = document.getElementById("coRows"); if (!cr) return;
       cr.innerHTML = "";
@@ -421,91 +405,51 @@
   }
   function renderPane() {
     var pane = document.getElementById("payPane"); if (!pane) return;
-    var total = cartTotal();
-    if (payMethod === "cash") {
-      pane.innerHTML = '<div id="cashDisplay" class="cash-display" aria-live="polite">₱0.00</div>' +
-        '<div id="quickRow" class="quick-row"></div>' +
-        '<div id="changeBox" class="change-box" style="display:none;"><div class="change-top"><span>Change (Sukli)</span><span id="changeAmt">₱0.00</span></div><div id="denomBreak" class="denom"></div></div>' +
-        '<div id="shortMsg" class="short-msg" role="alert" style="display:none;"></div>' +
-        '<div id="numpad" class="numpad-grid"></div>';
-      var qr = document.getElementById("quickRow");
-      quickAmounts(total).forEach(function (v, i) {
-        var b = document.createElement("button"); b.className = "quick-chip bigbtn";
-        b.textContent = i === 0 ? "Exact" : "₱" + v;
-        b.onclick = function () { buzz(10); cashInput = String(Math.round(v * 100)); updateCash(); };
-        qr.appendChild(b);
-      });
-      var np = document.getElementById("numpad");
-      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"].forEach(function (k) {
-        var b = document.createElement("button"); b.className = "numpad" + (k === "C" ? " np-clear" : ""); b.textContent = k;
-        b.setAttribute("aria-label", k === "C" ? "Clear" : k === "⌫" ? "Backspace" : k);
-        b.onclick = function () { buzz(10); if (k === "C") cashInput = ""; else if (k === "⌫") cashInput = cashInput.slice(0, -1); else if (cashInput.length < 7) cashInput += k; updateCash(); };
-        np.appendChild(b);
-      });
-      updateCash();
-    } else if (payMethod === "utang") {
-      var seen = {}, opts = "";
-      utang.forEach(function (u) { if (u.debtor_name && !seen[u.debtor_name]) { seen[u.debtor_name] = 1; opts += '<option value="' + esc(u.debtor_name) + '">'; } });
-      pane.innerHTML = '<p class="m-note">Adds these items to Utang. No payment is recorded until it is paid.</p>' +
-        '<label class="field-label" for="payWho">Who owes?</label>' +
-        '<input id="payWho" class="text-input" list="debtors" maxlength="16" autocomplete="off" autocapitalize="words" placeholder="e.g. Aling Nena" value="' + esc(payWho) + '"><datalist id="debtors">' + opts + '</datalist>';
-      document.getElementById("payWho").oninput = function () { payWho = this.value; refreshComplete(); };
-      refreshComplete();
-    } else {
-      pane.innerHTML = '<div class="ewallet"><div class="ew-amt">' + money(total) + '</div>' +
-        '<p class="m-note">Ask the customer to send exactly this amount by ' + methodLabel(payMethod) + '. Confirm it arrived before completing.</p></div>' +
-        '<label class="field-label" for="payRef">Reference no. (optional)</label>' +
-        '<input id="payRef" class="text-input" inputmode="numeric" maxlength="20" autocomplete="off" placeholder="Last digits of the reference" value="' + esc(payRef) + '">';
-      document.getElementById("payRef").oninput = function () { this.value = this.value.replace(/[^0-9A-Za-z]/g, ""); payRef = this.value; };
-      refreshComplete();
-    }
-  }
-  function refreshComplete() {
-    var cs = document.getElementById("completeSale"); if (!cs) return;
-    var total = cartTotal(), ok = true, label = "Complete sale · " + money(total);
-    if (payMethod === "cash") {
-      ok = cashInput !== "" && Math.round((cashVal() - total) * 100) >= 0;
-      if (cashInput === "") label = "Enter cash received";
-      else if (!ok) label = "Cash is short";
-    } else if (payMethod === "utang") {
-      ok = !!cleanName(payWho); label = ok ? "Record utang · " + money(total) : "Enter who owes";
-    }
-    cs.disabled = !ok; cs.textContent = label;
+    pane.innerHTML = '<div id="cashDisplay" class="cash-display" aria-live="polite">₱0.00</div>' +
+      '<div id="quickRow" class="quick-row"></div>' +
+      '<div id="changeBox" class="change-box" style="display:none;"><div class="change-top"><span>Change (Sukli)</span><span id="changeAmt">₱0.00</span></div><div id="denomBreak" class="denom"></div></div>' +
+      '<div id="shortMsg" class="short-msg" role="alert" style="display:none;"></div>' +
+      '<div id="numpad" class="numpad-grid"></div>';
+    var qr = document.getElementById("quickRow");
+    quickAmounts(cartTotal()).forEach(function (v, i) {
+      var b = document.createElement("button"); b.className = "quick-chip bigbtn";
+      b.textContent = i === 0 ? "Exact" : "₱" + v;
+      b.onclick = function () { buzz(10); cashInput = String(Math.round(v * 100)); updateCash(); };
+      qr.appendChild(b);
+    });
+    var np = document.getElementById("numpad");
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"].forEach(function (k) {
+      var b = document.createElement("button"); b.className = "numpad" + (k === "C" ? " np-clear" : ""); b.textContent = k;
+      b.setAttribute("aria-label", k === "C" ? "Clear" : k === "⌫" ? "Backspace" : k);
+      b.onclick = function () { buzz(10); if (k === "C") cashInput = ""; else if (k === "⌫") cashInput = cashInput.slice(0, -1); else if (cashInput.length < 7) cashInput += k; updateCash(); };
+      np.appendChild(b);
+    });
+    updateCash();
   }
   function updateCash() {
     var cd = document.getElementById("cashDisplay"); if (!cd) return;
     var cash = cashVal(), total = cartTotal(), diff = Math.round((cash - total) * 100);
     cd.textContent = money(cash);
-    var cb = document.getElementById("changeBox"), sm = document.getElementById("shortMsg");
+    var cb = document.getElementById("changeBox"), sm = document.getElementById("shortMsg"), cs = document.getElementById("completeSale");
+    var ok = false, label = "Enter cash received";
     if (!cashInput || cash === 0) { cb.style.display = "none"; sm.style.display = "none"; }
-    else if (diff < 0) { cb.style.display = "none"; sm.style.display = "block"; sm.textContent = "Short by " + money(-diff / 100); }
+    else if (diff < 0) { cb.style.display = "none"; sm.style.display = "block"; sm.textContent = "Short by " + money(-diff / 100); label = "Cash is short"; }
     else {
-      sm.style.display = "none"; cb.style.display = "block";
+      sm.style.display = "none"; cb.style.display = "block"; ok = true; label = "Complete sale · " + money(total);
       document.getElementById("changeAmt").textContent = money(diff / 100);
       var cents = diff, parts = [];
       denoms.forEach(function (d) { var c = Math.floor(cents / (d.v * 100)); cents = cents % (d.v * 100); if (c > 0) parts.push(c + "× " + d.l); });
       document.getElementById("denomBreak").textContent = parts.join(" · ") || "Exact amount";
     }
-    refreshComplete();
+    cs.disabled = !ok; cs.textContent = label;
   }
   async function completeSale() {
-    var total = cartTotal();
+    var total = cartTotal(), cash = cashVal(), change = Math.round((cash - total) * 100) / 100;
     var items = Object.keys(cart).map(function (id) { var p = products.find(function (x) { return String(x.id) === String(id) }); return { name: p.name, qty: cart[id], price: Number(p.price) }; });
     var btn = document.getElementById("completeSale"); btn.textContent = "Saving..."; btn.disabled = true;
-    var title, big = "", note;
-    if (payMethod === "utang") {
-      var nm = cleanName(payWho);
-      addRow("utang", { debtor_name: nm, items: items, total: total, accepted_by: currentUser, accepted_name: displayName(currentUser) });
-      title = "Utang recorded"; note = esc(nm) + " owes " + money(total);
-    } else {
-      var cash = payMethod === "cash" ? cashVal() : total, change = Math.round((cash - total) * 100) / 100;
-      addRow("transactions", { user_email: currentUser, user_name: displayName(currentUser), items: items, total: total, cash: cash, change: change, method: payMethod, ref: payRef });
-      title = "Sale complete";
-      if (payMethod === "cash") big = '<div class="chg-label">Give change</div><div class="chg-amt">' + money(change) + '</div>';
-      note = money(total) + " by " + methodLabel(payMethod) + " · kept in Sales for 24 hours";
-    }
+    addRow("transactions", { user_email: currentUser, user_name: displayName(currentUser), items: items, total: total, cash: cash, change: change, method: "cash" });
     cart = {}; closeModal(); updateCoBar();
-    openModal('<div class="success"><svg class="state-orca bob" viewBox="0 0 120 90" role="img" aria-label="Happy orca"><use href="#orcaCute"/></svg><h3>' + title + '</h3>' + big + '<p class="m-note">' + note + '</p><button id="okSale" class="btn-primary bigbtn">New sale</button></div>', true);
+    openModal('<div class="success"><svg class="state-orca bob" viewBox="0 0 120 90" role="img" aria-label="Happy orca"><use href="#orcaCute"/></svg><h3>Sale complete</h3><div class="chg-label">Give change</div><div class="chg-amt">' + money(change) + '</div><p class="m-note">' + money(total) + ' sale · kept in Sales for 24 hours</p><button id="okSale" class="btn-primary bigbtn">New sale</button></div>', true);
     var ok = document.getElementById("okSale");
     ok.onclick = function () { closeModal(); refreshData().then(function () { renderStore(); }); };
     ok.focus();
@@ -723,13 +667,11 @@
     var owed = utang.reduce(function (s, u) { return s + Number(u.total); }, 0);
     var h = '<div class="fadein"><h2 class="page-h">Sales</h2><p class="dash-date">' + new Date().toLocaleDateString("en-PH", { weekday: "long", month: "short", day: "numeric" }) + '</p>' +
       '<section class="dash-hero"><div class="dash-lbl">Sales today</div><div class="dash-big">' + money(st.total) + '</div><div class="dash-sub">' + st.count + ' order' + (st.count === 1 ? "" : "s") + ' · Avg ' + money(avg) + '</div></section>' +
-      '<div class="stat-grid"><div class="stat"><div class="stat-v">' + money(st.by.cash || 0) + '</div><div class="stat-l">Cash sales</div></div>' +
+      '<div class="stat-grid"><div class="stat"><div class="stat-v">' + Object.keys(st.items).reduce(function (a, n) { return a + st.items[n]; }, 0) + '</div><div class="stat-l">Items sold</div></div>' +
       '<div class="stat"><div class="stat-v warn">' + money(owed) + '</div><div class="stat-l">Unpaid utang</div></div></div>';
     if (!st.count) {
       h += emptyState("No sales yet today", "Complete a sale and it will show up here.");
     } else {
-      var ms = METHODS.filter(function (m) { return m[0] !== "utang" && st.by[m[0]]; });
-      if (ms.length) h += '<div class="card-box"><h3 class="card-h">By payment method</h3>' + ms.map(function (m) { return '<div class="m-row"><span>' + m[1] + '</span><b>' + money(st.by[m[0]]) + '</b></div>'; }).join("") + '</div>';
       var first = 8, last = 18, max = 0, peak = -1;
       st.hours.forEach(function (v, i) { if (v > 0) { first = Math.min(first, i); last = Math.max(last, i); } if (v > max) { max = v; peak = i; } });
       var bars = "";
@@ -757,45 +699,112 @@
     var hl = document.getElementById("histList"); if (!hl) return;
     transactions.forEach(function (t) {
       var items = t.items.map(function (i) { return i.qty + "× " + esc(i.name); }).join(", ");
-      var m = t.method || "cash";
-      var pay = m === "cash" ? "Cash " + money(Number(t.cash)) + " · Change " + money(Number(t.change)) : methodLabel(m) + (t.ref ? " · Ref " + esc(t.ref) : "");
+      var pay = "Cash " + money(Number(t.cash)) + " · Change " + money(Number(t.change));
       var row = document.createElement("div"); row.className = "order-row";
       row.innerHTML = '<div class="or-top"><span class="or-who"><span class="or-av" style="background:' + ucolor(t.user_name || t.user_email) + '">' + avTxt((t.user_name || "S")) + '</span>' + esc(t.user_name || "Staff") + '</span><span class="or-amt">' + money(Number(t.total)) + '</span></div>' +
         '<div class="or-items">' + items + '</div>' +
-        '<div class="or-meta"><span class="m-badge">' + methodLabel(m) + '</span>' + (t.created_at ? new Date(t.created_at).toLocaleString("en-PH", { hour: "numeric", minute: "2-digit" }) : "") + ' · ' + pay + '</div>';
+        '<div class="or-meta">' + (t.created_at ? new Date(t.created_at).toLocaleString("en-PH", { hour: "numeric", minute: "2-digit" }) : "") + ' · ' + pay + '</div>';
       hl.appendChild(row);
     });
   }
 
-  // ---------- CALC ----------
-  var calcDisp = "0", calcPrev = null, calcOp = null, calcFresh = true;
+  // ---------- CALC (shows what you typed, live result, keyboard) ----------
+  var calcTokens = [], calcCur = "", calcFresh = false, calcErr = false, calcShown = "", calcHist = [];
+  var CALC_OPS = ["+", "−", "×", "÷"];
+  function calcApply(a, b, op) { var r = op === "+" ? a + b : op === "−" ? a - b : op === "×" ? a * b : (b === 0 ? NaN : a / b); return isFinite(r) ? Math.round(r * 1e4) / 1e4 : NaN; }
+  function calcEval(tokens, cur) {
+    var t = tokens.slice(); if (cur !== "") t.push(parseFloat(cur));
+    if (t.length && CALC_OPS.indexOf(t[t.length - 1]) >= 0) t.pop();
+    if (!t.length) return 0;
+    var nums = [t[0]], ops = [], i;
+    for (i = 1; i < t.length; i += 2) {   // × and ÷ first, like a phone calculator
+      if (t[i] === "×" || t[i] === "÷") { var r = calcApply(nums[nums.length - 1], t[i + 1], t[i]); if (isNaN(r)) return NaN; nums[nums.length - 1] = r; }
+      else { ops.push(t[i]); nums.push(t[i + 1]); }
+    }
+    var acc = nums[0];
+    for (i = 0; i < ops.length; i++) acc = calcApply(acc, nums[i + 1], ops[i]);
+    return acc;
+  }
+  function fmtNum(n) { return isNaN(n) ? "Error" : Number(n).toLocaleString("en-US", { maximumFractionDigits: 4 }); }
+  function fmtCur(s) { var p = String(s).split("."); p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return p.join("."); }
+  function calcExpr() {
+    return calcTokens.map(function (t) { return typeof t === "number" ? fmtNum(t) : t; }).join(" ") + (calcCur !== "" ? (calcTokens.length ? " " : "") + fmtCur(calcCur) : "");
+  }
   function renderCalc() {
-    view.innerHTML = '<div class="fadein" style="max-width:420px;margin:0 auto;"><h2 style="margin:0 0 12px;font-size:21px;font-weight:800;">Calculator</h2>' +
-      '<div id="calcScreen" style="background:var(--card);border:2px solid var(--accent);border-radius:18px;padding:20px 16px;font-size:36px;font-weight:800;text-align:right;margin-bottom:12px;min-height:54px;word-break:break-all;line-height:1.2;color:var(--accent-t);box-shadow:0 0 24px var(--accent-soft);">0</div>' +
-      '<div id="calcPad" style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;"></div></div>';
+    view.innerHTML = '<div class="fadein calc-wrap"><h2 class="page-h">Calculator</h2>' +
+      '<div class="calc-screen" aria-live="polite"><div id="calcExpr" class="calc-expr"></div><div id="calcMain" class="calc-main">0</div><div id="calcLive" class="calc-live"></div></div>' +
+      '<div id="calcPad" class="calc-pad"></div>' +
+      '<div id="calcHist"></div><p class="calc-tip">Tip: you can also type on a keyboard. Enter is =, Esc clears.</p></div>';
     var pad = document.getElementById("calcPad");
-    var keys = [["C", "#f87171"], ["⌫", "#fbbf24"], ["%", "var(--accent)"], ["÷", "var(--accent)"], ["7"], ["8"], ["9"], ["×", "var(--accent)"], ["4"], ["5"], ["6"], ["−", "var(--accent)"], ["1"], ["2"], ["3"], ["+", "var(--accent)"], ["0", "", "span2"], [".", ""], ["=", "#10b981"]];
+    var keys = [["C", "fn"], ["⌫", "fn"], ["%", "fn"], ["÷", "op"], ["7"], ["8"], ["9"], ["×", "op"], ["4"], ["5"], ["6"], ["−", "op"], ["1"], ["2"], ["3"], ["+", "op"], ["0", "span2"], ["."], ["=", "eq"]];
     keys.forEach(function (k) {
-      var b = document.createElement("button"); b.className = "numpad"; b.textContent = k[0];
-      var span = k[2] === "span2" ? "grid-column:span 2;" : ""; var col = k[1] ? "color:" + k[1] + ";" : "color:var(--text);";
-      b.style.cssText = "padding:16px;border-radius:13px;border:1px solid var(--border);background:var(--card);font-size:20px;font-weight:800;" + col + span;
-      if (k[0] === "=") b.style.cssText += "background:#10b981;color:#052e16;border:none;";
+      var b = document.createElement("button"); b.className = "calc-key bigbtn" + (k[1] ? " " + k[1] : ""); b.textContent = k[0]; b.setAttribute("data-k", k[0]);
+      b.setAttribute("aria-label", { "C": "Clear", "⌫": "Backspace", "%": "Percent", "÷": "Divide", "×": "Multiply", "−": "Minus", "+": "Plus", "=": "Equals", ".": "Decimal point" }[k[0]] || k[0]);
       b.onclick = function () { buzz(k[0] === "=" ? 28 : 12); calcPress(k[0]); }; pad.appendChild(b);
     });
     updateCalc();
   }
-  function updateCalc() { var el = document.getElementById("calcScreen"); if (el) el.textContent = calcDisp; }
+  function updateCalc() {
+    var ex = document.getElementById("calcExpr"); if (!ex) return;
+    var main = document.getElementById("calcMain"), live = document.getElementById("calcLive");
+    ex.textContent = calcShown || calcExpr() || "\u00a0";
+    if (calcErr) main.textContent = "Can’t divide by 0";
+    else main.textContent = calcCur !== "" ? fmtCur(calcCur) : fmtNum(calcEval(calcTokens, ""));
+    main.classList.toggle("err", calcErr);
+    var showLive = !calcErr && calcTokens.length >= 2 && calcCur !== "";
+    live.textContent = showLive ? "= " + fmtNum(calcEval(calcTokens, calcCur)) : "\u00a0";
+    var pending = (calcCur === "" && calcTokens.length && CALC_OPS.indexOf(calcTokens[calcTokens.length - 1]) >= 0) ? calcTokens[calcTokens.length - 1] : "";
+    Array.prototype.forEach.call(document.querySelectorAll("#calcPad .op"), function (b) { var on = b.getAttribute("data-k") === pending; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+    var hl = document.getElementById("calcHist");
+    hl.innerHTML = calcHist.length ? '<h3 class="card-h list-h">Recent</h3>' + calcHist.map(function (h, i) { return '<button class="calc-h bigbtn" data-i="' + i + '"><span>' + esc(h.e) + '</span><b>= ' + fmtNum(h.r) + '</b></button>'; }).join("") : "";
+    Array.prototype.forEach.call(hl.querySelectorAll(".calc-h"), function (b) {
+      b.onclick = function () { var h = calcHist[Number(b.getAttribute("data-i"))]; calcTokens = []; calcCur = String(h.r); calcFresh = true; calcShown = ""; calcErr = false; updateCalc(); };
+    });
+  }
   function calcPress(k) {
-    if (k >= "0" && k <= "9") { if (calcFresh || calcDisp === "0") { calcDisp = k; calcFresh = false; } else calcDisp += k; }
-    else if (k === ".") { if (calcFresh) { calcDisp = "0."; calcFresh = false; } else if (calcDisp.indexOf(".") < 0) calcDisp += "."; }
-    else if (k === "C") { calcDisp = "0"; calcPrev = null; calcOp = null; calcFresh = true; }
-    else if (k === "⌫") { calcDisp = calcDisp.length > 1 ? calcDisp.slice(0, -1) : "0"; }
-    else if (k === "%") { calcDisp = String(parseFloat(calcDisp) / 100); }
-    else if (k === "+" || k === "−" || k === "×" || k === "÷") { if (calcPrev !== null && !calcFresh) calcDisp = String(doCalc(calcPrev, parseFloat(calcDisp), calcOp)); calcPrev = parseFloat(calcDisp); calcOp = k; calcFresh = true; }
-    else if (k === "=") { if (calcOp !== null && calcPrev !== null) { calcDisp = String(doCalc(calcPrev, parseFloat(calcDisp), calcOp)); calcPrev = null; calcOp = null; calcFresh = true; } }
+    if (calcErr) { calcErr = false; calcTokens = []; calcCur = ""; calcShown = ""; if (k === "C") { updateCalc(); return; } }
+    if (k >= "0" && k <= "9" && k.length === 1) {
+      calcShown = "";
+      if (calcFresh) { calcCur = k; calcFresh = false; }
+      else if (calcCur === "0") calcCur = k;
+      else if (calcCur.length < 12) calcCur += k;
+    }
+    else if (k === ".") {
+      calcShown = "";
+      if (calcFresh || calcCur === "") { calcCur = "0."; calcFresh = false; }
+      else if (calcCur.indexOf(".") < 0) calcCur += ".";
+    }
+    else if (k === "C") { calcTokens = []; calcCur = ""; calcFresh = false; calcShown = ""; }
+    else if (k === "⌫") {
+      calcShown = "";
+      if (calcFresh) { calcCur = ""; calcFresh = false; }
+      else if (calcCur !== "") calcCur = calcCur.slice(0, -1);
+      else if (calcTokens.length) { calcTokens.pop(); if (calcTokens.length) calcCur = String(calcTokens.pop()); }
+    }
+    else if (k === "%") { if (calcCur !== "") { calcCur = String(Math.round(parseFloat(calcCur) / 100 * 1e8) / 1e8); calcShown = ""; } }
+    else if (CALC_OPS.indexOf(k) >= 0) {
+      calcShown = ""; calcFresh = false;
+      if (calcCur !== "") { calcTokens.push(parseFloat(calcCur), k); calcCur = ""; }
+      else if (!calcTokens.length) calcTokens.push(0, k);
+      else if (CALC_OPS.indexOf(calcTokens[calcTokens.length - 1]) >= 0) calcTokens[calcTokens.length - 1] = k;
+    }
+    else if (k === "=") {
+      if (calcTokens.length && (calcCur !== "" || CALC_OPS.indexOf(calcTokens[calcTokens.length - 1]) >= 0)) {
+        var expr = calcExpr().replace(/\s[+−×÷]$/, ""), r = calcEval(calcTokens, calcCur);
+        if (isNaN(r)) { calcErr = true; calcTokens = []; calcCur = ""; }
+        else { calcHist.unshift({ e: expr, r: r }); calcHist = calcHist.slice(0, 5); calcShown = expr + " ="; calcTokens = []; calcCur = String(r); calcFresh = true; }
+      }
+    }
     updateCalc();
   }
-  function doCalc(a, b, op) { var r = op === "+" ? a + b : op === "−" ? a - b : op === "×" ? a * b : b !== 0 ? a / b : 0; return Math.round(r * 100) / 100; }
+  document.addEventListener("keydown", function (e) {
+    if (currentView !== "calc" || modal.style.display === "flex" || e.ctrlKey || e.metaKey || e.altKey) return;
+    var tg = e.target && e.target.tagName; if (tg === "INPUT" || tg === "TEXTAREA" || tg === "SELECT") return;
+    if (tg === "BUTTON" && (e.key === "Enter" || e.key === " ")) return;
+    var map = { "*": "×", "x": "×", "X": "×", "/": "÷", "-": "−", "Enter": "=", "Backspace": "⌫", "Escape": "C", "c": "C", ",": "." };
+    var k = map[e.key] || e.key;
+    if (k.length === 1 && (/[0-9]/.test(k) || ".+−×÷%=⌫C".indexOf(k) >= 0)) { e.preventDefault(); calcPress(k); }
+  });
 
   // ---------- modal ----------
   var leaving = false, exitOpen = false;
