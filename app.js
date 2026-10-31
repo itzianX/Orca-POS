@@ -354,7 +354,7 @@
         '<div style="font-size:15px;font-weight:800;color:var(--accent-t);">' + money(Number(p.price)) + '</div>';
       if (qty) {
         var act = document.createElement("div"); act.className = "pc-actions";
-        act.innerHTML = '<button class="pc-btn pc-minus bigbtn" aria-label="Reduce ' + esc(p.name) + ' by one">−</button>' +
+        act.innerHTML = '<button class="pc-btn pc-minus bigbtn" aria-label="Reduce ' + esc(p.name) + ' by one"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>' +
           '<button class="pc-btn pc-del bigbtn" aria-label="Remove ' + esc(p.name) + ' from basket"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>';
         act.querySelector(".pc-minus").onclick = function (e) { e.stopPropagation(); buzz(10); cart[p.id]--; if (cart[p.id] <= 0) delete cart[p.id]; fillGrid(); updateCoBar(); };
         act.querySelector(".pc-del").onclick = function (e) { e.stopPropagation(); buzz(15); delete cart[p.id]; fillGrid(); updateCoBar(); toast("Removed " + p.name + " from basket"); };
@@ -590,8 +590,9 @@
       var nm = document.getElementById("newName").value.trim(); var pr = parseFloat(document.getElementById("newPrice").value);
       if (!nm || !pr || pr <= 0) { document.getElementById("addErr").style.display = "block"; return; }
       var btn = document.getElementById("addBtn"); btn.textContent = "Saving..."; btn.style.pointerEvents = "none";
-      addRow("products", { name: nm.charAt(0).toUpperCase() + nm.slice(1), price: Math.round(pr * 100) / 100, photo: selectedPhoto, grad: selectedGrad });
-      await refreshData(); renderAdd();
+addRow("products", { name: nm.charAt(0).toUpperCase() + nm.slice(1), price: Math.round(pr * 100) / 100, photo: selectedPhoto, grad: selectedGrad });
+buzz(12); toast("✓ Item added successfully", "ok");
+await refreshData(); renderAdd();
     };
     var pl = document.getElementById("prodList");
     products.forEach(function (p) {
@@ -705,14 +706,19 @@
     h += '<p class="note-bar">Order details are kept for 24 hours. Daily totals are kept for 30 days. Utang stays until it is paid.</p></div>';
     view.innerHTML = h;
     var hl = document.getElementById("histList"); if (!hl) return;
-    transactions.forEach(function (t) {
+transactions.forEach(function (t) {
       var items = t.items.map(function (i) { return i.qty + "× " + esc(i.name); }).join(", ");
       var pay = "Cash " + money(Number(t.cash)) + " · Change " + money(Number(t.change));
       var row = document.createElement("div"); row.className = "order-row";
-      row.innerHTML = '<div class="or-top"><span class="or-who"><span class="or-av" style="background:' + ucolor(t.user_name || t.user_email) + '">' + avTxt((t.user_name || "S")) + '</span>' + esc(t.user_name || "Staff") + '</span><span class="or-amt">' + money(Number(t.total)) + '</span></div>' +
+      row.innerHTML = '<div class="or-top"><span class="or-who"><span class="or-av" style="background:' + ucolor(t.user_name || t.user_email) + '">' + avTxt((t.user_name || "S")) + '</span>' + esc(t.user_name || "Staff") + '</span><span class="or-amt">' + money(Number(t.total)) + '</span><button class="delOrder bigbtn" data-id="' + t.id + '" style="margin-left:8px;padding:4px 8px;border-radius:8px;border:none;background:rgba(239,68,68,.15);color:#f87171;font-size:11px;font-weight:800;cursor:pointer;">Void</button></div>' +
         '<div class="or-items">' + items + '</div>' +
         '<div class="or-meta">' + (t.created_at ? new Date(t.created_at).toLocaleString("en-PH", { hour: "numeric", minute: "2-digit" }) : "") + ' · ' + pay + '</div>';
       hl.appendChild(row);
+    });
+    Array.prototype.forEach.call(hl.querySelectorAll(".delOrder"), function (b) {
+      b.onclick = function (e) { e.stopPropagation();
+        confirmDialog({ title: "Void this order?", note: "The sale record will be removed.", yes: "Void", danger: true, onYes: async function () { delRow("transactions", b.getAttribute("data-id")); await refreshData(); renderHistory(); toast("✓ Order voided", "ok"); } });
+      };
     });
   }
 
@@ -747,8 +753,20 @@
     var keys = [["C", "fn"], ["⌫", "fn"], ["%", "fn"], ["÷", "op"], ["7"], ["8"], ["9"], ["×", "op"], ["4"], ["5"], ["6"], ["−", "op"], ["1"], ["2"], ["3"], ["+", "op"], ["0", "span2"], ["."], ["=", "eq"]];
     keys.forEach(function (k) {
       var b = document.createElement("button"); b.className = "calc-key bigbtn" + (k[1] ? " " + k[1] : ""); b.textContent = k[0]; b.setAttribute("data-k", k[0]);
-      b.setAttribute("aria-label", { "C": "Clear", "⌫": "Backspace", "%": "Percent", "÷": "Divide", "×": "Multiply", "−": "Minus", "+": "Plus", "=": "Equals", ".": "Decimal point" }[k[0]] || k[0]);
-      b.onclick = function () { buzz(k[0] === "=" ? 28 : 12); calcPress(k[0]); }; pad.appendChild(b);
+      b.setAttribute("aria-label", { "C": "Clear", "⌫": "Backspace (hold to clear all)", "%": "Percent", "÷": "Divide", "×": "Multiply", "−": "Minus", "+": "Plus", "=": "Equals", ".": "Decimal point" }[k[0]] || k[0]);
+      if (k[0] === "⌫") {
+        var timer = null, fired = false;
+        var start = function () { fired = false; timer = setTimeout(function () { fired = true; buzz(28); calcTokens = []; calcCur = ""; calcShown = ""; calcErr = false; updateCalc(); }, 600); };
+        var cancel = function () { if (timer) { clearTimeout(timer); timer = null; } };
+        b.addEventListener("pointerdown", start);
+        b.addEventListener("pointerup", cancel);
+        b.addEventListener("pointerleave", cancel);
+        b.addEventListener("pointercancel", cancel);
+        b.onclick = function () { if (fired) { fired = false; return; } buzz(12); calcPress(k[0]); };
+      } else {
+        b.onclick = function () { buzz(k[0] === "=" ? 28 : 12); calcPress(k[0]); };
+      }
+      pad.appendChild(b);
     });
     updateCalc();
   }
@@ -819,7 +837,7 @@
   function openModal(html, center) {
     modal.className = "modal" + (center ? " center" : "");
     modal.style.display = "flex";
-    modal.innerHTML = '<div id="modalBg" style="position:absolute;inset:0;background:rgba(0,0,0,.7);"></div><div class="pop" role="dialog" aria-modal="true" style="position:relative;background:var(--card);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:18px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;">' + html + '</div>';
+    modal.innerHTML = '<div id="modalBg" style="position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);"></div><div class="pop" role="dialog" aria-modal="true" style="position:relative;background:var(--card);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:18px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;">' + html + '</div>';
     document.getElementById("modalBg").onclick = closeModal;
   }
   function closeModal() { modal.style.display = "none"; modal.innerHTML = ""; exitOpen = false; }

@@ -2810,6 +2810,7 @@ body {
 .pc-del {
   color: #f87171;
   border-color: rgba(239, 68, 68, .55);
+  background: rgba(239, 68, 68, .12);
 }
 
 [data-theme="arctic"] .pc-del {
