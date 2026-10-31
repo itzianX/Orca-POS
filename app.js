@@ -352,6 +352,14 @@
         '<div style="height:64px;border-radius:12px;overflow:hidden;margin-bottom:8px;border:1px solid rgba(255,255,255,.08);">' + prodThumb(p, 22) + '</div>' +
         '<div style="font-size:12px;font-weight:700;line-height:1.2;margin-bottom:5px;min-height:30px;display:flex;align-items:center;justify-content:center;">' + p.name + '</div>' +
         '<div style="font-size:15px;font-weight:800;color:var(--accent-t);">' + money(Number(p.price)) + '</div>';
+      if (qty) {
+        var act = document.createElement("div"); act.className = "pc-actions";
+        act.innerHTML = '<button class="pc-btn pc-minus bigbtn" aria-label="Reduce ' + esc(p.name) + ' by one">−</button>' +
+          '<button class="pc-btn pc-del bigbtn" aria-label="Remove ' + esc(p.name) + ' from basket"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>';
+        act.querySelector(".pc-minus").onclick = function (e) { e.stopPropagation(); buzz(10); cart[p.id]--; if (cart[p.id] <= 0) delete cart[p.id]; fillGrid(); updateCoBar(); };
+        act.querySelector(".pc-del").onclick = function (e) { e.stopPropagation(); buzz(15); delete cart[p.id]; fillGrid(); updateCoBar(); toast("Removed " + p.name + " from basket"); };
+        card.appendChild(act);
+      }
       card.onclick = function () { cart[p.id] = (cart[p.id] || 0) + 1; fillGrid(); updateCoBar(); };
       grid.appendChild(card);
     });
