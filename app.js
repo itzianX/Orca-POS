@@ -348,17 +348,29 @@
       var card = document.createElement("div");
       card.className = "pcard";
       card.style.cssText = "background:var(--card);border:2px solid " + (qty ? "var(--accent)" : "var(--border)") + ";border-radius:16px;padding:10px;text-align:center;position:relative;";
-card.innerHTML = (qty ? '<span style="position:absolute;top:-8px;right:-8px;background:var(--accent);color:var(--on-accent);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">' + qty + '</span>' : '') +
-        '<div style="height:48px;border-radius:12px;overflow:hidden;margin-bottom:8px;border:1px solid rgba(255,255,255,.08);">' + prodThumb(p, 22) + '</div>' +
-        '<div style="font-size:15px;font-weight:800;line-height:1.2;margin-bottom:5px;min-height:34px;display:flex;align-items:center;justify-content:center;">' + p.name + '</div>' +
-        '<div style="font-size:13px;font-weight:800;color:var(--accent-t);margin-bottom:8px;">' + money(Number(p.price)) + '</div>' +
-        '<div class="pc-actions" style="min-height:40px;"></div>';
+card.innerHTML = '<div style="font-size:17px;font-weight:900;line-height:1.1;margin-bottom:8px;text-align:center;min-height:36px;display:flex;align-items:center;justify-content:center;">' + p.name + '</div>' +
+        '<div style="height:56px;border-radius:12px;overflow:hidden;margin-bottom:8px;border:1px solid rgba(255,255,255,.08);">' + prodThumb(p, 22) + '</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+        '<div style="font-size:14px;font-weight:800;color:var(--accent-t);">' + money(Number(p.price)) + '</div>' +
+        '<div class="pc-actions" style="display:flex;gap:6px;min-height:36px;"></div></div>';
+      // plus button always
+      var act = card.querySelector(".pc-actions");
+      var plus = document.createElement("button");
+      plus.className = "pc-btn pc-plus bigbtn"; plus.setAttribute("aria-label", "Add " + esc(p.name));
+      plus.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+      plus.onclick = function (e) { e.stopPropagation(); buzz(10); cart[p.id] = (cart[p.id] || 0) + 1; fillGrid(); updateCoBar(); };
+      act.appendChild(plus);
       if (qty) {
-        var act = card.querySelector(".pc-actions");
-        act.innerHTML = '<button class="pc-btn pc-minus bigbtn" aria-label="Reduce ' + esc(p.name) + ' by one"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>' +
-          '<button class="pc-btn pc-del bigbtn" aria-label="Remove ' + esc(p.name) + ' from basket"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>';
-        act.querySelector(".pc-minus").onclick = function (e) { e.stopPropagation(); buzz(10); cart[p.id]--; if (cart[p.id] <= 0) delete cart[p.id]; fillGrid(); updateCoBar(); };
-        act.querySelector(".pc-del").onclick = function (e) { e.stopPropagation(); buzz(15); delete cart[p.id]; fillGrid(); updateCoBar(); toast("Removed " + p.name + " from basket"); };
+        var minus = document.createElement("button");
+        minus.className = "pc-btn pc-minus bigbtn"; minus.setAttribute("aria-label", "Reduce " + esc(p.name));
+        minus.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>';
+        minus.onclick = function (e) { e.stopPropagation(); buzz(10); cart[p.id]--; if (cart[p.id] <= 0) delete cart[p.id]; fillGrid(); updateCoBar(); };
+        var del = document.createElement("button");
+        del.className = "pc-btn pc-del bigbtn"; del.setAttribute("aria-label", "Remove " + esc(p.name));
+        del.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>';
+        del.onclick = function (e) { e.stopPropagation(); buzz(15); delete cart[p.id]; fillGrid(); updateCoBar(); toast("Removed " + p.name + " from basket"); };
+        act.insertBefore(minus, plus);
+        act.insertBefore(del, plus);
       }
       card.onclick = function () { cart[p.id] = (cart[p.id] || 0) + 1; fillGrid(); updateCoBar(); };
       grid.appendChild(card);
