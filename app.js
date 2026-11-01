@@ -102,14 +102,14 @@
   function showRestrictionPopup(user, r) {
     user = user || currentUser;
     r = r || getUserRestriction(user) || { reason: "Restricted by Administrator", type: "temporary" };
-    var typeLabel = r.type === "temporary" ? "Temporary Restriction" : "Administrative Restriction";
+    var typeLabel = r.type === "temporary" ? "Temporary Restriction" : "Administrative Hold";
     openModal(
       '<div class="dlg" style="text-align:center;">' +
-        '<div class="dlg-ic danger" style="width:62px;height:62px;margin:0 auto 12px;background:rgba(239,68,68,.16);color:#f87171;font-size:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;">' +
-          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' +
+        '<div class="dlg-ic danger" style="width:64px;height:64px;margin:0 auto 12px;background:rgba(239,68,68,.16);color:#f87171;display:flex;align-items:center;justify-content:center;border-radius:50%;">' +
+          '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' +
         '</div>' +
         '<h3 style="margin:0 0 6px;font-size:20px;font-weight:800;color:var(--text);">Transaction Restricted</h3>' +
-        '<p style="margin:0 0 14px;font-size:13px;color:#f87171;font-weight:700;">⚠️ ' + esc(typeLabel) + ' · ' + esc(displayName(user)) + '</p>' +
+        '<p style="margin:0 0 14px;font-size:13px;color:#f87171;font-weight:700;">' + esc(typeLabel) + ' · ' + esc(displayName(user)) + '</p>' +
         '<div style="background:var(--card2);border:1.5px solid rgba(239,68,68,.35);border-radius:14px;padding:14px;margin:0 0 14px;text-align:left;">' +
           '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;letter-spacing:.05em;margin-bottom:4px;">Reason for restriction:</div>' +
           '<div style="font-size:14px;color:var(--text);font-weight:700;line-height:1.4;">' + esc(r.reason || "Under administrative review") + '</div>' +
@@ -123,6 +123,7 @@
           '<button id="restrSwitch" class="btn-primary bigbtn" style="flex:1;">Switch Cashier</button>' +
         '</div>' +
       '</div>',
+      true,
       true
     );
     var rc = document.getElementById("restrClose");
@@ -282,7 +283,7 @@
         lsSet('orca_admin', { email: adminUser });
         closeModal();
         openAdminPanel();
-        toast('✓ Admin logged in', 'ok');
+        toast('Admin logged in', 'ok');
       } else {
         err.textContent = 'Invalid credentials. Please verify your admin password.';
         err.style.display = 'block';
@@ -299,10 +300,10 @@
     var tabsHtml = 
       '<div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">' +
         '<button id="tabRestr" class="bigbtn" style="flex:1;padding:9px;border-radius:10px;border:none;background:' + (activeTab === 'restrictions' ? 'var(--accent)' : 'var(--card2)') + ';color:' + (activeTab === 'restrictions' ? 'var(--on-accent)' : 'var(--muted)') + ';font-size:13px;font-weight:800;cursor:pointer;">' +
-          '🚫 Restrictions ' + (restrictedCount > 0 ? '<span style="background:#ef4444;color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;margin-left:4px;">' + restrictedCount + '</span>' : '') +
+          '<span style="display:inline-flex;align-items:center;gap:4px;">' + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' + ' Restrictions</span> ' + (restrictedCount > 0 ? '<span style="background:#ef4444;color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;margin-left:4px;">' + restrictedCount + '</span>' : '') +
         '</button>' +
         '<button id="tabBroad" class="bigbtn" style="flex:1;padding:9px;border-radius:10px;border:none;background:' + (activeTab === 'broadcast' ? 'var(--accent)' : 'var(--card2)') + ';color:' + (activeTab === 'broadcast' ? 'var(--on-accent)' : 'var(--muted)') + ';font-size:13px;font-weight:800;cursor:pointer;">' +
-          '📢 Broadcast' +
+          '<span style="display:inline-flex;align-items:center;gap:4px;">' + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' + ' Broadcast</span>' +
         '</button>' +
       '</div>';
 
@@ -322,8 +323,8 @@
                   '<div style="font-weight:800;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(u) + (u === currentUser ? ' <small style="color:var(--accent-t);font-weight:600;">(Current)</small>' : '') + '</div>' +
                   '<div style="font-size:11px;margin-top:2px;">' +
                     (isRestr ? 
-                      '<span style="color:#f87171;font-weight:700;">🚫 Restricted (' + esc(r.type || 'temporary') + ')</span> · <span style="color:var(--muted);">' + esc(r.reason || 'Admin hold') + '</span>' : 
-                      '<span style="color:#34d399;font-weight:700;">✓ Active (Can Transact)</span>') +
+                      '<span style="color:#f87171;font-weight:700;">Restricted (' + esc(r.type || 'temporary') + ')</span> · <span style="color:var(--muted);">' + esc(r.reason || 'Admin hold') + '</span>' : 
+                      '<span style="color:#34d399;font-weight:700;">Active (Can Transact)</span>') +
                   '</div>' +
                 '</div>' +
               '</div>' +
@@ -352,7 +353,7 @@
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
         '<div>' +
           '<div style="display:flex;align-items:center;gap:6px;">' +
-            '<span style="color:#fbbf24;font-size:16px;">🛡️</span>' +
+            '<span style="color:#fbbf24;display:inline-flex;align-items:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>' +
             '<h3 style="margin:0;font-size:18px;font-weight:800;">Admin Control Panel</h3>' +
           '</div>' +
           '<div style="font-size:11px;color:var(--muted);margin-top:2px;">Logged in: <b>' + esc(adminUser || 'Admin') + '</b></div>' +
@@ -414,7 +415,7 @@
       btn.onclick = async function(){
         var targetU = btn.getAttribute('data-u');
         await unrestrictUser(targetU);
-        toast('✓ Restriction lifted for ' + targetU, 'ok');
+        toast('Restriction lifted for ' + targetU, 'ok');
         openAdminPanel('restrictions');
         if (targetU === currentUser) render();
       };
@@ -472,7 +473,7 @@
         notifications.unshift({ id: Date.now(), title: title, message: msg, type: 'info', target_type: target, target_users: targetUsers, created_by: adminUser||'Admin', created_at: new Date().toISOString() });
         checkAndShowNotifications();
 
-        toast('✓ Notification broadcasted', 'ok');
+        toast('Notification broadcasted', 'ok');
         if (titleEl) titleEl.value = '';
         if (msgEl) msgEl.value = '';
       };
@@ -483,7 +484,7 @@
     openModal(
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
         '<div style="display:flex;align-items:center;gap:6px;">' +
-          '<span style="color:#ef4444;font-size:18px;">🚫</span>' +
+          '<span style="color:#ef4444;display:inline-flex;align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></span>' +
           '<h3 style="margin:0;font-size:18px;font-weight:800;">Restrict ' + esc(userName) + '</h3>' +
         '</div>' +
         '<button id="rdClose" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);">×</button>' +
@@ -524,7 +525,7 @@
       var type = (document.querySelector('input[name="rdType"]:checked') || {}).value || 'temporary';
       var reason = document.getElementById('rdReason').value.trim() || 'Restricted by Store Administrator';
       await restrictUser(userName, reason, type);
-      toast('✓ Restricted ' + userName, 'ok');
+      toast('Restricted ' + userName, 'ok');
       openAdminPanel('restrictions');
       if (userName === currentUser) {
         render();
@@ -557,8 +558,10 @@
     var av = document.getElementById("userAvatar"), nm = document.getElementById("userName");
     var dn = displayName(currentUser);
     av.style.background = ucolor(dn); av.innerHTML = avTxt(dn);
-    nm.textContent = dn;
-    document.getElementById("userChip").setAttribute("aria-label", "Settings for " + dn);
+    var isR = isUserRestricted(currentUser);
+    var restrIcon = isR ? ' <span id="headerRestrPill" style="display:inline-flex;align-items:center;background:rgba(239,68,68,.22);color:#f87171;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:800;gap:3px;margin-left:4px;">' + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' + ' Restricted</span>' : '';
+    nm.innerHTML = esc(dn) + restrIcon;
+    document.getElementById("userChip").setAttribute("aria-label", "Settings for " + dn + (isR ? " (Restricted)" : ""));
   }
 
   // ---------- local storage (no server, works offline) ----------
@@ -714,7 +717,7 @@
     var users = lsGet(K.n, []), nl = document.getElementById("nameList");
     var trash = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>';
     nl.innerHTML = users.length ? '<p class="field-label">Choose your account</p><div class="acct-list">' + users.map(function (n) {
-      return '<div class="acct-row"><button class="acct-pick bigbtn" data-n="' + n + '"><span class="ua lg" style="background:' + ucolor(n) + '">' + avTxt(n) + '</span><span class="acct-name">' + n + '</span>' + (isUserRestricted(n) ? '<span style="background:rgba(239,68,68,.18);color:#f87171;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:800;margin-left:auto;">🚫 Restricted</span>' : '') + '</button>' +
+      return '<div class="acct-row"><button class="acct-pick bigbtn" data-n="' + n + '"><span class="ua lg" style="background:' + ucolor(n) + '">' + avTxt(n) + '</span><span class="acct-name">' + n + '</span>' + (isUserRestricted(n) ? '<span style="background:rgba(239,68,68,.18);color:#f87171;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:800;margin-left:auto;">Restricted</span>' : '') + '</button>' +
         '<button class="acct-del bigbtn" data-n="' + n + '" aria-label="Delete account ' + n + '" title="Delete account">' + trash + '</button></div>';
     }).join("") + '</div><p class="or-line">or create a new account</p>' : "";
     Array.prototype.forEach.call(nl.querySelectorAll(".acct-pick"), function (b) { b.onclick = function () { startSession(b.getAttribute("data-n")); }; });
@@ -788,7 +791,7 @@
     transactions = lsGet(K.t, []).filter(function (t) { return t.user_name !== name && t.user_email !== name; });
     lsSet(K.t, transactions);
     if (lsGet(K.c, null) === name) lsSet(K.c, null);
-    showWelcome(); toast("✓ Account “" + name + "” was deleted", "ok");
+    showWelcome(); toast("Account “" + name + "” was deleted", "ok");
   }
 
   // ---------- fix a wrong name: updates all past sales + utang ----------
@@ -812,7 +815,7 @@
   function openSettings() {
     var cur = document.documentElement.getAttribute("data-theme");
     var standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
-    var inst = standalone ? '<p class="m-note">✓ Installed — running as an app.</p>'
+    var inst = standalone ? '<p class="m-note">Installed — running as an app.</p>'
       : deferredInstall ? '<button id="installBtn" class="btn-primary bigbtn" style="font-size:15px;">Install ORCA POS</button>'
         : '<p class="m-note">iPhone: tap Share → Add to Home Screen.<br>Android / Chrome: menu → Install app.</p>';
     openModal(
@@ -832,6 +835,18 @@
       '<div class="row-gap"><button id="expBtn" class="btn-ghost bigbtn" style="margin:0;flex:1;">Export backup</button>' +
       '<label class="btn-ghost bigbtn" style="margin:0;flex:1;text-align:center;display:flex;align-items:center;justify-content:center;">Restore<input id="impInput" type="file" accept="application/json,.json" style="display:none;"></label></div>' +
       '<p class="m-label">Account</p>' +
+      '<div style="background:var(--card2);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
+          '<div style="width:36px;height:36px;border-radius:10px;background:rgba(251,191,36,.15);color:#fbbf24;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
+          '</div>' +
+          '<div style="min-width:0;">' +
+            '<div style="font-weight:800;font-size:14px;color:var(--text);">Admin Panel</div>' +
+            '<div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (isAdmin && adminUser ? 'Logged in as ' + esc(adminUser) : 'Owner & manager controls') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<button id="adminSettingsBtn" class="btn-primary bigbtn inline-btn" style="padding:8px 14px;font-size:13px;flex-shrink:0;">' + (isAdmin && adminUser ? 'Open Panel' : 'Sign In') + '</button>' +
+      '</div>' +
       '<button id="swBtn" class="btn-ghost bigbtn" style="margin-top:0;">Switch user</button>' +
       '<button id="exitBtn" class="btn-ghost bigbtn">Exit app</button>' +
       '<button id="delAcc" class="btn-danger bigbtn">Delete this account</button>'
@@ -868,7 +883,7 @@
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }));
       a.download = "orca-pos-backup-" + new Date().toISOString().slice(0, 10) + ".json";
-      document.body.appendChild(a); a.click(); a.remove(); toast("✓ Backup saved", "ok");
+      document.body.appendChild(a); a.click(); a.remove(); toast("Backup saved", "ok");
     };
     document.getElementById("impInput").onchange = function (e) {
       var f = e.target.files[0]; if (!f) return;
@@ -879,7 +894,7 @@
           if (d.app !== "orca-pos" || !Array.isArray(d.products)) throw 0;
           if (!confirm("Replace ALL data on this device with this backup?")) return;
           lsSet(K.p, d.products); lsSet(K.t, d.transactions || []); lsSet(K.u, d.utang || []); lsSet(K.d, d.daily || {}); lsSet(K.n, d.users || []); avMap = d.avatars || {}; lsSet("orca_avatars", avMap);
-          closeModal(); refreshData().then(function () { render(); toast("✓ Backup restored", "ok"); });
+          closeModal(); refreshData().then(function () { render(); toast("Backup restored", "ok"); });
         } catch (x) { toast("That file isn’t an ORCA backup"); }
       };
       r.readAsText(f);
@@ -906,7 +921,7 @@
 
   // ---------- STORE ----------
   function renderStore() {
-    var restrBanner = isUserRestricted(currentUser) ? ('<div class="note-bar" style="border-left:4px solid var(--red);background:rgba(239,68,68,.12);color:#fca5a5;display:flex;justify-content:space-between;align-items:center;padding:11px 14px;margin-bottom:14px;border-radius:12px;"><span>⚠️ <b>Account Restricted:</b> You cannot process transactions right now.</span><button id="storeRestrDetails" class="bigbtn" style="background:rgba(239,68,68,.25);border:none;color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:8px;">Details</button></div>') : '';
+    var restrBanner = isUserRestricted(currentUser) ? ('<div class="note-bar" style="border-left:4px solid var(--red);background:rgba(239,68,68,.12);color:#fca5a5;display:flex;justify-content:space-between;align-items:center;padding:11px 14px;margin-bottom:14px;border-radius:12px;"><span><span style="color:#f87171;display:inline-flex;align-items:center;margin-right:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="display:inline-block;vertical-align:middle;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> <b>Account Restricted:</b> You cannot process transactions right now.</span><button id="storeRestrDetails" class="bigbtn" style="background:rgba(239,68,68,.25);border:none;color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:8px;">Details</button></div>') : '';
     view.innerHTML = '<div class="fadein">' + restrBanner +
       '<section class="welcome"><div class="welcome-txt"><h2>Welcome, ' + displayName(currentUser) + '!</h2><p>Tap an item to add it to your basket.</p></div><svg class="welcome-orca bob" viewBox="0 0 120 90" role="img" aria-label="A friendly orca"><use href="#orcaCute"/></svg></section>' +
       '<div style="position:relative;margin-bottom:14px;">' +
@@ -1076,7 +1091,7 @@ cart = {}; closeModal(); updateCoBar();
       selChips +
       '<button id="addUtangBtn" class="bigbtn" style="width:100%;padding:13px;border-radius:14px;border:none;background:#e7a43a;color:#0b1120;font-size:15px;font-weight:800;cursor:pointer;">+ Record Utang</button>' +
       '<p id="utangErr" style="display:none;color:#f87171;font-size:12px;margin:7px 0 0;text-align:center;font-weight:700;">Enter a name and pick at least one product</p></div>' +
-      '<h3 style="margin:0 0 10px;font-size:15px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Unpaid utang · tap ✓ when paid</h3>' +
+      '<h3 style="margin:0 0 10px;font-size:15px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Unpaid utang · tap when paid</h3>' +
       '<div id="utangList"></div></div>';
     document.getElementById("pickProductsBtn").onclick = openUtangPicker;
     Array.prototype.forEach.call(view.querySelectorAll(".rmUtangItem"), function (b) { b.onclick = function () { delete utangCart[b.getAttribute("data-id")]; renderUtang(); }; });
@@ -1103,7 +1118,7 @@ cart = {}; closeModal(); updateCoBar();
       row.innerHTML = '<span style="width:38px;height:38px;border-radius:50%;background:' + ucolor(u.debtor_name) + ';color:#0b1120;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0;">' + avTxt(u.debtor_name) + '</span>' +
         '<span style="flex:1;min-width:0;"><span style="display:block;font-weight:800;font-size:14px;">' + u.debtor_name + '</span><span style="display:block;font-size:12px;color:var(--text2);line-height:1.4;">' + items + '</span><span style="display:block;font-size:11px;color:var(--muted);margin-top:2px;">' + (u.created_at ? new Date(u.created_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "") + (u.accepted_name ? ' · by ' + u.accepted_name : '') + '</span></span>' +
         '<span style="font-weight:800;color:#fbbf24;font-size:16px;flex-shrink:0;">' + money(Number(u.total)) + '</span>' +
-        '<button class="payUtang bigbtn" data-id="' + u.id + '" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(16,185,129,.18);color:#34d399;font-size:15px;font-weight:800;cursor:pointer;flex-shrink:0;">✓</button>';
+        '<button class="payUtang bigbtn" data-id="' + u.id + '" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(16,185,129,.18);color:#34d399;font-size:15px;font-weight:800;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></button>';
       ul.appendChild(row);
     });
     Array.prototype.forEach.call(ul.querySelectorAll(".payUtang"), function (b) {
@@ -1111,7 +1126,7 @@ cart = {}; closeModal(); updateCoBar();
       b.onclick = function () {
         if (isUserRestricted(currentUser)) { showRestrictionPopup(currentUser); return; }
         var id = b.getAttribute("data-id"), u = utang.find(function (x) { return String(x.id) === String(id); }); if (!u) return;
-        confirmDialog({ title: "Mark this utang as paid?", note: esc(u.debtor_name) + " · " + money(Number(u.total)) + ". The record will be removed.", yes: "Mark as paid", onYes: async function () { delRow("utang", id); await refreshData(); renderUtang(); toast("✓ Utang marked as paid", "ok"); } });
+        confirmDialog({ title: "Mark this utang as paid?", note: esc(u.debtor_name) + " · " + money(Number(u.total)) + ". The record will be removed.", yes: "Mark as paid", onYes: async function () { delRow("utang", id); await refreshData(); renderUtang(); toast("Utang marked as paid", "ok"); } });
       };
     });
   }
@@ -1205,7 +1220,7 @@ var nm = document.getElementById("newName").value.trim(); var pr = parseFloat(do
 if (!nm || !pr || pr <= 0) { document.getElementById("addErr").style.display = "block"; return; }
 var btn = document.getElementById("addBtn"); btn.textContent = "Saving..."; btn.style.pointerEvents = "none";
 addRow("products", { name: nm.charAt(0).toUpperCase() + nm.slice(1), price: Math.round(pr * 100) / 100, photo: selectedPhoto, grad: selectedGrad, stock: isNaN(st) ? null : st });
-buzz(12); toast("✓ Item added successfully", "ok");
+buzz(12); toast("Item added successfully", "ok");
 await refreshData(); renderAdd();
     };
     var itemSearch = document.getElementById("itemSearch");
@@ -1346,11 +1361,11 @@ await refreshData(); renderAdd();
         '</p>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;">' +
           '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;">' +
-            '<b style="color:#ef4444;display:block;margin-bottom:2px;">⚠️ What Voiding Does:</b>' +
+            '<b style="color:#ef4444;display:flex;align-items:center;gap:4px;margin-bottom:2px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="display:inline-block;vertical-align:middle;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> What Voiding Does:</b>' +
             '<span style="color:var(--muted);line-height:1.4;display:block;">Permanently removes the order from today\'s revenue and stats. Cannot be undone.</span>' +
           '</div>' +
           '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;">' +
-            '<b style="color:#38bdf8;display:block;margin-bottom:2px;">💵 Drawer Cash:</b>' +
+            '<b style="color:#38bdf8;display:flex;align-items:center;gap:4px;margin-bottom:2px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg> Drawer Cash:</b>' +
             '<span style="color:var(--muted);line-height:1.4;display:block;">If cash was already collected, manually refund it to customer or adjust your physical drawer.</span>' +
           '</div>' +
         '</div>' +
@@ -1387,7 +1402,7 @@ transactions.forEach(function (t) {
             delRow("transactions", id);
             await refreshData();
             renderHistory();
-            toast("✓ Order voided and deducted from sales", "ok");
+            toast("Order voided and deducted from sales", "ok");
           }
         });
       };
@@ -1507,11 +1522,14 @@ transactions.forEach(function (t) {
 
   // ---------- modal ----------
   var leaving = false, exitOpen = false;
-  function openModal(html, center) {
+  function openModal(html, center, preventBackdropClose) {
     modal.className = "modal" + (center ? " center" : "");
     modal.style.display = "flex";
-    modal.innerHTML = '<div id="modalBg" style="position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);"></div><div class="pop" role="dialog" aria-modal="true" style="position:relative;background:var(--card);border:1px solid var(--border);border-radius:24px;padding:18px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;">' + html + '</div>';
-    document.getElementById("modalBg").onclick = closeModal;
+    modal.innerHTML = '<div id="modalBg"></div><div class="pop" role="dialog" aria-modal="true">' + html + '</div>';
+    var bg = document.getElementById("modalBg");
+    if (bg) {
+      bg.onclick = preventBackdropClose ? null : closeModal;
+    }
   }
   function closeModal() { modal.style.display = "none"; modal.innerHTML = ""; exitOpen = false; }
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && modal.style.display === "flex") closeModal(); });
