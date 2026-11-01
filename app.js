@@ -88,6 +88,8 @@
     buzz(20);
   }
   function openAdminLogin(){
+    isAdmin = false; adminUser = null;
+    try { localStorage.removeItem('orca_admin'); } catch(e){}
     openModal(
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="margin:0;font-size:18px;font-weight:800;">Admin Login</h3><button id="alx" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);">×</button></div>' +
       '<input id="alEmail" type="text" placeholder="Email/Username" style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--card2);color:var(--text);">' +
@@ -126,7 +128,7 @@
       '<p id="ntErr" style="display:none;color:#f87171;font-size:12px;margin:6px 0 0;text-align:center;"></p>'
     );
     var apx = document.getElementById('apx');
-    if (apx) apx.onclick = closeModal;
+    if (apx) apx.onclick = function(){ closeModal(); openAdminLogin(); };
     var radios = document.getElementsByName('ntTarget') || [];
     var usersDiv = document.getElementById('ntUsers');
     function toggleUsers(){ 
@@ -497,7 +499,7 @@
     var rb = document.getElementById("renameBtn");
     if (rb) rb.onclick = function () { renameUser(document.getElementById("renameInput").value); };
     var adminBtn = document.getElementById("adminSettingsBtn");
-    if (adminBtn) adminBtn.onclick = function(){ if (isAdmin) openAdminPanel(); else openAdminLogin(); };
+    if (adminBtn) adminBtn.onclick = function(){ if (isAdmin) { openAdminLogin(); } else { openAdminLogin(); } };
     document.getElementById("renameInput").onkeydown = function (e) { if (e.key === "Enter") renameUser(this.value); };
     document.getElementById("askDel").onchange = function () { lsSet(K.sd, !this.checked); toast(this.checked ? "Item deletion will ask first" : "Item deletion won’t ask again"); };
     Array.prototype.forEach.call(modal.querySelectorAll(".theme-opt"), function (b) {
