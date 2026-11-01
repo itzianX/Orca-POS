@@ -1,6 +1,18 @@
 (function () {
   "use strict";
 
+  var SUPABASE_URL = (window.ORCA_SUPABASE_URL || "").trim();
+  var SUPABASE_ANON_KEY = (window.ORCA_SUPABASE_ANON_KEY || "").trim();
+  var sb = null;
+  try {
+    if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY) {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log("Supabase initialized");
+    } else {
+      console.log("Supabase not configured - using local storage only");
+    }
+  } catch (e) { console.error("Supabase init error:", e); sb = null; }
+
   var grads = ["linear-gradient(135deg,#0ea5e9,#0369a1)", "linear-gradient(135deg,#f59e0b,#b45309)", "linear-gradient(135deg,#ec4899,#9d174d)", "linear-gradient(135deg,#34d399,#047857)", "linear-gradient(135deg,#a78bfa,#6d28d9)", "linear-gradient(135deg,#fb923c,#9a3412)", "linear-gradient(135deg,#22d3ee,#0e7490)", "linear-gradient(135deg,#f43f5e,#9f1239)"];
   var userColors = ["#7ab8dc", "#e79bbd", "#e5c166", "#6fcfa5", "#a99be0", "#e8909a", "#6cc6d4", "#8fd694", "#c3a0e0", "#dcc65a"];
   var denoms = [{ v: 1000, l: "₱1000" }, { v: 500, l: "₱500" }, { v: 200, l: "₱200" }, { v: 100, l: "₱100" }, { v: 50, l: "₱50" }, { v: 20, l: "₱20" }, { v: 10, l: "₱10" }, { v: 5, l: "₱5" }, { v: 1, l: "₱1" }];
@@ -16,7 +28,7 @@
   var ORIGINAL_DEFAULTS = ["Sardines", "Egg", "Lollipop", "Cup Noodles", "Juice", "Water", "Rice 1kg", "Bread"];
 
   var products = [], transactions = [], utang = [];
-  var currentUser = null, currentView = "store", searchQuery = "";
+  var currentUser = null, currentView = "store", searchQuery = "", itemsSearchQuery = "";
   var cart = {}, utangCart = {}, cashInput = "";
   var view = document.getElementById("view"), modal = document.getElementById("modal"), coBar = document.getElementById("checkoutBar");
 
@@ -53,7 +65,26 @@
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { toast("Storage full — export a backup"); return false; } }
   function getL(t) { return t === "products" ? products : t === "transactions" ? transactions : utang; }
   function setL(t, l) { if (t === "products") products = l; else if (t === "transactions") transactions = l; else utang = l; }
-  function save(t) { lsSet(t === "products" ? K.p : t === "transactions" ? K.t : K.u, getL(t)); }
+  function save(t) { 
+    lsSet(t === "products" ? K.p : t === "transactions" ? K.t : K.u, getL(t));
+    if (sb) {
+      try {
+        if (t === "transactions") {
+          var list = getL(t);
+          if (list && list.length) {
+            var rows = list.map(function(r){ return { id: r.id, user_name: r.user_name || r.user_email || '', user_email: r.user_email || r.user_name || '', items: r.items || [], total: r.total||0, cash: r.cash||0, change: r.change||0, method: r.method||'cash', created_at: r.created_at||new Date().toISOString() }; });
+            sb.from('transactions').upsert(rows, { onConflict: 'id' }).then(function(res){ if(res.error){ console.error('Supabase transactions error:', res.error.message, res.error.details||'', res.error.hint||''); } else { console.log('transactions synced:', rows.length); } });
+          }
+        } else if (t === "utang") {
+          var ul = getL(t);
+          if (ul && ul.length) {
+            var urows = ul.map(function(r){ return { id: r.id, debtor_name: r.debtor_name||'', items: r.items||[], total: r.total||0, note: r.note||'', accepted_by: r.accepted_by||'', accepted_name: r.accepted_name||'', created_at: r.created_at||new Date().toISOString() }; });
+            sb.from('utang').upsert(urows, { onConflict: 'id' }).then(function(res){ if(res.error){ console.error('Supabase utang error:', res.error.message, res.error.details||'', res.error.hint||''); } else { console.log('utang synced:', urows.length); } });
+          }
+        }
+      } catch(e){ console.error('save sync exception:', e); }
+    }
+  }
   function addRow(t, row) {
     var l = getL(t);
     row.id = l.reduce(function (m, x) { return Math.max(m, Number(x.id) || 0); }, 0) + 1;
@@ -62,7 +93,19 @@
     save(t); return row;
   }
   function updRow(t, id, patch) { getL(t).forEach(function (r) { if (String(r.id) === String(id)) Object.assign(r, patch); }); save(t); }
-  function delRow(t, id) { setL(t, getL(t).filter(function (r) { return String(r.id) !== String(id); })); save(t); }
+  function delRow(t, id) { 
+    setL(t, getL(t).filter(function (r) { return String(r.id) !== String(id); })); 
+    save(t);
+    if (sb) {
+      try {
+        if (t === "utang") {
+          sb.from('utang').delete().eq('id', id).then(function(res){ if(res.error) console.error('Supabase utang delete error:', res.error.message); else console.log('utang deleted from Supabase:', id); });
+        } else if (t === "transactions") {
+          sb.from('transactions').delete().eq('id', id).then(function(res){ if(res.error) console.error('Supabase transactions delete error:', res.error.message); else console.log('transaction deleted from Supabase:', id); });
+        }
+      } catch(e) { console.error('delete sync exception:', e); }
+    }
+  }
   function emptyState(title, text) {
     return '<div class="empty"><svg class="empty-orca" viewBox="0 0 120 90" role="img" aria-label="Orca mascot"><use href="#orcaCute"/></svg><h3>' + title + '</h3><p>' + text + '</p></div>';
   }
@@ -99,14 +142,38 @@
     var keys = Object.keys(daily).sort(); while (keys.length > 30) delete daily[keys.shift()];
     lsSet(K.d, daily); transactions = keep; save("transactions");
   }
-  function refreshData() {
+  async function refreshData() {
+    if (sb) {
+      try {
+        var tRes = await sb.from('transactions').select('*').order('created_at', { ascending: false }).limit(200);
+        if (tRes.data && tRes.data.length) {
+          transactions = tRes.data.map(function(r){ return { id: r.id, user_name: r.user_name || r.user_email || '', user_email: r.user_email || r.user_name || '', items: r.items || [], total: r.total||0, cash: r.cash||0, change: r.change||0, method: r.method||'cash', created_at: r.created_at }; });
+          lsSet(K.t, transactions);
+        } else {
+          transactions = lsGet(K.t, []);
+        }
+        var uRes = await sb.from('utang').select('*').order('created_at', { ascending: false }).limit(200);
+        if (uRes.data && uRes.data.length) {
+          utang = uRes.data.map(function(r){ return { id: r.id, debtor_name: r.debtor_name||'', items: r.items||[], total: r.total||0, note: r.note||'', accepted_by: r.accepted_by||'', accepted_name: r.accepted_name||'', created_at: r.created_at }; });
+          lsSet(K.u, utang);
+        } else {
+          utang = lsGet(K.u, []);
+        }
+      } catch(e) {
+        console.error('refreshData error:', e);
+        transactions = lsGet(K.t, []);
+        utang = lsGet(K.u, []);
+      }
+    } else {
+      transactions = lsGet(K.t, []);
+      utang = lsGet(K.u, []);
+    }
     products = lsGet(K.p, null);
     if (!products || !products.length) {
       products = defaultProds.map(function (p, i) { return Object.assign({ id: i + 1 }, p); });
-      lsSet(K.p, products);
+      save("products");
       lsSet("orca_seeded", defaultProds.map(function (d) { return d.name; }));
     } else {
-      // add starter items this device has never been given (deleted ones never come back)
       var seeded = lsGet("orca_seeded", ORIGINAL_DEFAULTS), added = false;
       defaultProds.forEach(function (d) {
         if (seeded.indexOf(d.name) >= 0) return;
@@ -117,13 +184,14 @@
       if (added) { lsSet(K.p, products); lsSet("orca_seeded", seeded); }
     }
     products.sort(function (a, b) { return a.name.localeCompare(b.name); });
-    transactions = lsGet(K.t, []); utang = lsGet(K.u, []); purgeOld();
+    purgeOld();
+    updateCoBar();
     return Promise.resolve();
   }
 
   // ---------- profiles: just a typed name, no sign-in ----------
   var deferredInstall = null;
-  var THEMES = [["abyss", "Abyss", "Deep-sea navy", "#0b1120"], ["orca", "Orca", "Black & white", "#050505"], ["arctic", "Arctic", "Light ice", "#e8f1f9"], ["christmas", "Christmas", "Festive red & green", "#0a1a0f"], ["mint", "Mint", "Fresh green", "#0a1a12"]];
+  var THEMES = [["abyss", "Abyss", "Deep-sea navy", "#0b1120"], ["orca", "Orca", "Black & white", "#050505"], ["arctic", "Arctic", "Light ice", "#e8f1f9"], ["christmas", "Orca Fox", "Blue-grey palette", "#0f172a"], ["mint", "Mint", "Fresh green", "#0a1a12"]];
   function toast(msg, kind) {
     var t = document.getElementById("toast"); if (!t) return;
     t.textContent = msg; t.classList.toggle("ok", kind === "ok"); t.classList.add("show");
@@ -528,33 +596,47 @@ cart = {}; closeModal(); updateCoBar();
   }
 
   function openUtangPicker() {
+    var upQuery = "";
     openModal(
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h3 style="margin:0;font-size:19px;font-weight:800;">Pick products</h3><button id="pickClose" class="bigbtn" style="background:var(--accent-soft);border:none;color:var(--accent-t);width:34px;height:34px;border-radius:50%;font-size:17px;font-weight:800;cursor:pointer;">×</button></div>' +
       '<p style="margin:0 0 10px;font-size:12px;color:var(--muted);">Tap + to add, − to reduce. Pick as many as you want.</p>' +
-      '<div id="pickRows" style="max-height:48vh;overflow-y:auto;margin-bottom:12px;"></div>' +
+      '<input id="upSearch" type="text" placeholder="Search items..." value="" style="width:100%;box-sizing:border-box;padding:11px 14px 11px 38px;font-size:14px;border:2px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card2);color:var(--text);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" style="position:relative;left:10px;top:-38px;margin-bottom:-16px;display:block;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>' +
+      '<div id="pickRows" style="max-height:42vh;overflow-y:auto;margin-bottom:12px;"></div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:10px 14px;background:rgba(245,158,11,.1);border:1.5px solid rgba(245,158,11,.4);border-radius:14px;"><span style="font-weight:700;font-size:14px;color:#fbbf24;">Total</span><span id="pickTotal" style="font-weight:800;font-size:20px;color:#fbbf24;">₱0.00</span></div>' +
       '<button id="pickDone" class="bigbtn" style="width:100%;padding:14px;border-radius:14px;border:none;background:#e7a43a;color:#0b1120;font-size:16px;font-weight:800;cursor:pointer;">Done — Back to utang</button>'
     );
     function fillPicker() {
       var pr = document.getElementById("pickRows"); if (!pr) return;
       pr.innerHTML = "";
-      products.forEach(function (p) {
-        var q = utangCart[p.id] || 0;
+      var q = (upQuery || "").toLowerCase().trim();
+      var list = q ? products.filter(function (p) { return String(p.name || "").toLowerCase().indexOf(q) !== -1; }) : products;
+      if (list.length === 0) {
+        pr.innerHTML = '<div style="text-align:center;padding:18px 10px;color:var(--muted);font-size:13px;"><svg class="bob" viewBox="0 0 120 90" style="width:90px;height:68px;display:block;margin:0 auto 10px;"><use href="#orcaCute" /></svg><div style="font-weight:800;color:var(--text);margin-bottom:4px;">No items found</div><div>Try a different search</div></div>';
+        document.getElementById("pickTotal").textContent = money(utangTotal());
+        return;
+      }
+      list.forEach(function (p) {
+        var qv = utangCart[p.id] || 0;
         var row = document.createElement("div");
         row.style.cssText = "display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);";
         row.innerHTML = '<div style="width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;">' + prodThumb(p, 16) + '</div>' +
-          '<span style="flex:1;font-weight:700;font-size:14px;">' + p.name + '</span>' +
+          '<span style="flex:1;font-weight:700;font-size:14px;">' + esc(p.name) + '</span>' +
           '<span style="font-weight:700;color:var(--muted);font-size:13px;min-width:52px;text-align:right;">' + money(Number(p.price)) + '</span>' +
           '<button class="pMinus bigbtn" data-id="' + p.id + '" style="width:30px;height:30px;border-radius:9px;border:none;background:var(--accent-soft);color:var(--accent-t);font-size:17px;font-weight:800;cursor:pointer;line-height:1;flex-shrink:0;">−</button>' +
-          '<span style="font-weight:800;min-width:22px;text-align:center;font-size:15px;color:' + (q ? "#fbbf24" : "#475569") + ';">' + q + '</span>' +
+          '<span style="font-weight:800;min-width:22px;text-align:center;font-size:15px;color:' + (qv ? "#fbbf24" : "#475569") + ';">' + qv + '</span>' +
           '<button class="pPlus bigbtn" data-id="' + p.id + '" style="width:30px;height:30px;border-radius:9px;border:none;background:rgba(52,211,153,.18);color:#34d399;font-size:17px;font-weight:800;cursor:pointer;line-height:1;flex-shrink:0;">+</button>';
         pr.appendChild(row);
       });
       document.getElementById("pickTotal").textContent = money(utangTotal());
-      Array.prototype.forEach.call(pr.querySelectorAll(".pMinus"), function (b) { b.onclick = function () { var id = b.getAttribute("data-id"); if (utangCart[id]) { utangCart[id]--; if (utangCart[id] <= 0) delete utangCart[id]; } fillPicker(); }; });
-      Array.prototype.forEach.call(pr.querySelectorAll(".pPlus"), function (b) { b.onclick = function () { var id = b.getAttribute("data-id"); utangCart[id] = (utangCart[id] || 0) + 1; fillPicker(); }; });
+      Array.prototype.forEach.call(pr.querySelectorAll(".pMinus"), function (b) { b.onclick = function () { var id = b.getAttribute("data-id"); if (utangCart[id]) { utangCart[id]--; if (utangCart[id] <= 0) delete utangCart[id]; } fillPicker(); var ups = document.getElementById("upSearch"); if (ups) { try { ups.focus(); ups.selectionStart = ups.selectionEnd = ups.value.length; } catch(e){} } }; });
+      Array.prototype.forEach.call(pr.querySelectorAll(".pPlus"), function (b) { b.onclick = function () { var id = b.getAttribute("data-id"); utangCart[id] = (utangCart[id] || 0) + 1; fillPicker(); var ups = document.getElementById("upSearch"); if (ups) { try { ups.focus(); ups.selectionStart = ups.selectionEnd = ups.value.length; } catch(e){} } }; });
     }
     fillPicker();
+    var ups = document.getElementById("upSearch");
+    if (ups) {
+      ups.oninput = function () { upQuery = ups.value || ""; fillPicker(); try { ups.focus(); ups.selectionStart = ups.selectionEnd = ups.value.length; } catch(e){} };
+      setTimeout(function(){ try { ups.focus(); } catch(e){} }, 10);
+    }
     document.getElementById("pickClose").onclick = closeModal;
     document.getElementById("pickDone").onclick = function () { closeModal(); renderUtang(); };
   }
@@ -563,6 +645,7 @@ cart = {}; closeModal(); updateCoBar();
   var selectedGrad = 0, selectedPhoto = null;
   function renderAdd() {
     selectedGrad = 0; selectedPhoto = null;
+    var prevFocus = document.activeElement && document.activeElement.id;
     view.innerHTML = '<div class="fadein"><h2 style="margin:0 0 4px;font-size:21px;font-weight:800;">Add item to sell</h2><p style="margin:0 0 14px;color:var(--muted);font-size:13px;">Add photo or pick a default color · saved on this device.</p>' +
       '<div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:16px;margin-bottom:16px;">' +
       '<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">' +
@@ -574,7 +657,13 @@ cart = {}; closeModal(); updateCoBar();
       '<input id="newStock" type="number" inputmode="numeric" placeholder="Stock (optional)" style="width:100%;box-sizing:border-box;padding:13px;font-size:15px;border:2px solid var(--border);border-radius:12px;margin-bottom:11px;background:var(--card2);color:var(--text);">' +
       '<button id="addBtn" class="bigbtn" style="width:100%;padding:13px;border-radius:14px;border:none;background:var(--accent);color:var(--on-accent);font-size:15px;font-weight:800;cursor:pointer;">+ Add Item</button>' +
       '<p id="addErr" style="display:none;color:#f87171;font-size:12px;margin:7px 0 0;text-align:center;font-weight:700;">Enter name and valid price</p></div>' +
-      '<h3 style="margin:0 0 10px;font-size:15px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Your items · tap to edit, × to delete</h3><div id="prodList"></div></div>';
+      '<h3 style="margin:0 0 10px;font-size:15px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Your items · tap to edit, × to delete</h3>' +
+      '<input id="itemSearch" type="text" placeholder="Search items..." value="' + esc(itemsSearchQuery) + '" style="width:100%;box-sizing:border-box;padding:12px 14px 12px 40px;font-size:14px;border:2px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card2);color:var(--text);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" style="position:relative;left:12px;top:-42px;margin-bottom:-18px;display:block;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>' +
+      '<div id="prodList"></div></div>';
+    if (prevFocus === "itemSearch") {
+      var is = document.getElementById("itemSearch");
+      if (is) { is.focus(); try { is.selectionStart = is.selectionEnd = is.value.length; } catch(e){} }
+    }
     var sw = document.getElementById("swatches");
     grads.forEach(function (g, i) {
       var d = document.createElement("div"); d.className = "swatch";
@@ -598,18 +687,37 @@ addRow("products", { name: nm.charAt(0).toUpperCase() + nm.slice(1), price: Math
 buzz(12); toast("✓ Item added successfully", "ok");
 await refreshData(); renderAdd();
     };
-    var pl = document.getElementById("prodList");
-    products.forEach(function (p) {
-      var row = document.createElement("div");
-      row.className = "bigbtn editRow"; row.setAttribute("data-id", p.id);
-      row.style.cssText = "display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:9px 11px;margin-bottom:8px;cursor:pointer;";
-      row.innerHTML = '<div style="width:38px;height:38px;border-radius:10px;overflow:hidden;flex-shrink:0;">' + prodThumb(p, 15) + '</div><span style="flex:1;font-weight:700;font-size:14px;">' + p.name + '</span><span style="font-weight:800;color:var(--accent-t);font-size:15px;">' + money(Number(p.price)) + '</span><button class="delProd" data-id="' + p.id + '" style="width:26px;height:26px;border-radius:50%;border:none;background:rgba(239,68,68,.15);color:#f87171;font-size:13px;font-weight:800;cursor:pointer;flex-shrink:0;">×</button>';
-      pl.appendChild(row);
-    });
-    Array.prototype.forEach.call(pl.querySelectorAll(".editRow"), function (r) {
-      r.onclick = function (e) { if (e.target.classList.contains("delProd")) return; editProduct(r.getAttribute("data-id")); };
-    });
-    Array.prototype.forEach.call(pl.querySelectorAll(".delProd"), function (b) { b.setAttribute("aria-label", "Delete item"); b.onclick = function (e) { e.stopPropagation(); askDeleteItem(b.getAttribute("data-id")); }; });
+    var itemSearch = document.getElementById("itemSearch");
+    if (itemSearch) {
+      itemSearch.oninput = function () { 
+        itemsSearchQuery = itemSearch.value || ""; 
+        renderProdList();
+        try { itemSearch.focus(); itemSearch.selectionStart = itemSearch.selectionEnd = itemSearch.value.length; } catch(e){}
+      };
+    }
+    renderProdList();
+
+    function renderProdList() {
+      var pl = document.getElementById("prodList"); if (!pl) return;
+      pl.innerHTML = "";
+      var q = (itemsSearchQuery || "").toLowerCase().trim();
+      var list = q ? products.filter(function (p) { return String(p.name || "").toLowerCase().indexOf(q) !== -1; }) : products;
+      if (list.length === 0) {
+        pl.innerHTML = '<div style="text-align:center;padding:24px 10px;color:var(--muted);font-size:13px;"><svg class="bob" viewBox="0 0 120 90" style="width:90px;height:68px;display:block;margin:0 auto 12px;"><use href="#orcaCute" /></svg><div style="font-weight:800;color:var(--text);margin-bottom:4px;">No items found</div><div>Try a different search</div></div>';
+        return;
+      }
+      list.forEach(function (p) {
+        var row = document.createElement("div");
+        row.className = "bigbtn editRow"; row.setAttribute("data-id", p.id);
+        row.style.cssText = "display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:9px 11px;margin-bottom:8px;cursor:pointer;";
+        row.innerHTML = '<div style="width:38px;height:38px;border-radius:10px;overflow:hidden;flex-shrink:0;">' + prodThumb(p, 15) + '</div><span style="flex:1;font-weight:700;font-size:14px;">' + esc(p.name) + '</span><span style="font-weight:800;color:var(--accent-t);font-size:15px;">' + money(Number(p.price)) + '</span><button class="delProd" data-id="' + p.id + '" style="width:26px;height:26px;border-radius:50%;border:none;background:rgba(239,68,68,.15);color:#f87171;font-size:13px;font-weight:800;cursor:pointer;flex-shrink:0;">×</button>';
+        pl.appendChild(row);
+      });
+      Array.prototype.forEach.call(pl.querySelectorAll(".editRow"), function (r) {
+        r.onclick = function (e) { if (e.target.classList.contains("delProd")) return; editProduct(r.getAttribute("data-id")); };
+      });
+      Array.prototype.forEach.call(pl.querySelectorAll(".delProd"), function (b) { b.setAttribute("aria-label", "Delete item"); b.onclick = function (e) { e.stopPropagation(); askDeleteItem(b.getAttribute("data-id")); }; });
+    }
   }
 
   function askDeleteItem(id) {

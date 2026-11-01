@@ -1,0 +1,2 @@
+window.ORCA_SUPABASE_URL = "https://rwqcgyhoqlflbdsgvrgb.supabase.co";
+window.ORCA_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3cWNneWhvcWxmbGJkc2d2cmdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1MDg4NTAsImV4cCI6MjEwOTA4NDg1MH0.PTu-djqRKnliC0kUKxv-WZbGd6KPtBDohagdC7vZv8w";

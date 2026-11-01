@@ -650,23 +650,23 @@ select {
   color-scheme: light;
 }
 
-[data-theme="christmas"] {
-  --accent: #dc2626;
-  --accent-d: #16a34a;
-  --accent-t: #f87171;
-  --bg: #0a1a0f;
-  --card: #14261a;
-  --card2: #1e3a28;
-  --text: #fef2f2;
-  --text2: #bbf7d0;
-  --muted: #86efac;
-  --border: rgba(220, 38, 38, .25);
-  --nav: #14261a;
-  --header-bg: rgba(10, 26, 15, .92);
-  --glow1: rgba(220, 38, 38, .22);
-  --glow2: rgba(22, 163, 74, .15);
-  color-scheme: dark;
-}
+  [data-theme="christmas"] {
+    --accent: #674ea7;
+    --accent-d: #2e5f81;
+    --accent-t: #bfd0df;
+    --bg: #0f172a;
+    --card: #16223a;
+    --card2: #1e2b4a;
+    --text: #d0e0e3;
+    --text2: #bfd0df;
+    --muted: #a2c4c9;
+    --border: rgba(162, 196, 201, .25);
+    --nav: #16223a;
+    --header-bg: rgba(15, 23, 42, .92);
+    --glow1: rgba(103, 78, 167, .22);
+    --glow2: rgba(46, 95, 129, .18);
+    color-scheme: dark;
+  }
 
 [data-theme="mint"] {
   --accent: #34d399;
@@ -1082,9 +1082,9 @@ textarea {
   background: #fff;
 }
 
-.tp-christmas { background: #0a1a0f; }
-.tp-christmas i { background: #dc2626; }
-.tp-christmas i:last-child { background: #bbf7d0; }
+.tp-christmas { background: #0f172a; }
+.tp-christmas i { background: #2e5f81; }
+.tp-christmas i:last-child { background: #674ea7; }
 
 .tp-mint { background: #0a1a12; }
 .tp-mint i { background: #34d399; }
