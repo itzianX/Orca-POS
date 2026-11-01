@@ -3501,3 +3501,27 @@ body,
     transition: none;
   }
 }
+
+/* ---------- logo stays visible on light themes ----------
+   The orca mark is white. On a white card it vanished (and the old invert
+   filter was unreliable), so on light themes the logo sits on the same dark
+   navy tile as the app icon, ringed in the theme accent. */
+html[data-theme="arctic"] .logo-small,
+html[data-theme="arctic"] .logo-circle,
+html[data-theme="rose"] .logo-small,
+html[data-theme="rose"] .logo-circle {
+  background: linear-gradient(135deg, #1e293b, #0b1120);
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(11, 17, 32, .25);
+}
+
+html[data-theme="arctic"] .logo-small svg,
+html[data-theme="arctic"] .logo-circle svg,
+html[data-theme="arctic"] .logo-small use,
+html[data-theme="arctic"] .logo-circle use,
+html[data-theme="rose"] .logo-small svg,
+html[data-theme="rose"] .logo-circle svg,
+html[data-theme="rose"] .logo-small use,
+html[data-theme="rose"] .logo-circle use {
+  filter: none !important;
+}
