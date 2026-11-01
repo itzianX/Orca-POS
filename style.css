@@ -386,7 +386,6 @@ select {
   overflow-x: hidden;
   box-sizing: border-box;
   padding-bottom: 90px;
-  overflow: hidden;
 }
 
 .bg-glow {
@@ -2101,7 +2100,6 @@ body { touch-action: manipulation; }
 
 @media (max-width: 600px) {
   #pg { grid-template-columns: repeat(2, 1fr) !important; }
-}
   .header-brand { justify-content: center; text-align: center; width: 100%; }
   .net-pill { margin: 0 auto; }
 }
@@ -2919,9 +2917,6 @@ body { touch-action: manipulation; }
 [data-theme="arctic"] .logo-small use,
 [data-theme="arctic"] .logo-circle use {
   filter: invert(1);
-}
-  color: #b91c1c;
-  border-color: rgba(185, 28, 28, .5);
 }
 [data-theme="halloween"] .logo-small, [data-theme="halloween"] .logo-circle { position: relative; }
 [data-theme="halloween"] .logo-small::after, [data-theme="halloween"] .logo-circle::after { content: "??"; position: absolute; top: -6px; right: -6px; font-size: 14px; }
