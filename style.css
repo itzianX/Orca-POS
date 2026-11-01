@@ -618,10 +618,10 @@ select {
   position: fixed;
   inset: 0;
   display: none;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   z-index: 50;
-  padding: 0 max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right));
+  padding: 0 max(10px, env(safe-area-inset-left)) 0 max(10px, env(safe-area-inset-right));
   width: 100%;
   max-width: 100vw;
   box-sizing: border-box;
@@ -634,6 +634,8 @@ select {
   margin: 0 auto 12px;
   box-sizing: border-box;
   overflow-x: hidden;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
 }
 
 /* ============================================================
