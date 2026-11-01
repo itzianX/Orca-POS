@@ -31,6 +31,81 @@
   var currentUser = null, currentView = "store", searchQuery = "", itemsSearchQuery = "";
   var cart = {}, utangCart = {}, cashInput = "";
   var isAdmin = false, adminUser = null, notifications = [], shownNotifs = lsGet("orca_shown_notifs", []);
+  var isDevSession = false, devAutoOpenPanel = false, inactivityTimer = null, devEmail = null, welcomeShownAt = 0;
+  // ---------- DEV helpers ----------
+  function isDevName(name) {
+    if (!name) return false;
+    var n = String(name).toLowerCase().replace(/[\s\-\.]+/g, "");
+    return n === "dev";
+  }
+  function isDevUser(u) { return u === "DEV"; }
+  function startInactivityTimer() {
+    clearInactivityTimer();
+    if (!isDevSession) return;
+    inactivityTimer = setTimeout(function(){
+      if (isDevSession && currentUser === "DEV") {
+        lockDev();
+      }
+    }, 15 * 60 * 1000);
+  }
+  function resetInactivityTimer() {
+    if (isDevSession && currentUser === "DEV") startInactivityTimer();
+  }
+  function clearInactivityTimer() {
+    if (inactivityTimer) { clearTimeout(inactivityTimer); inactivityTimer = null; }
+  }
+  function signOutDev() {
+    if (sb) { try { sb.auth.signOut(); } catch(e){} }
+    isDevSession = false; isAdmin = false; adminUser = null;
+    clearInactivityTimer();
+    try { localStorage.removeItem('orca_admin'); } catch(e){}
+    lsSet(K.c, null);
+    currentUser = null;
+    closeModal();
+    showWelcome();
+    toast('Developer signed out', 'ok');
+  }
+  // leave the DEV account WITHOUT signing out of Supabase (DEV stays logged in on this device)
+  function leaveDev() {
+    clearInactivityTimer();
+    isAdmin = false; adminUser = null;
+    try { localStorage.removeItem('orca_admin'); } catch(e){}
+    lsSet(K.c, null);
+    currentUser = null; cart = {}; utangCart = {};
+  }
+  function lockDev() { closeModal(); leaveDev(); showWelcome(); toast('Developer locked (idle)', 'ok'); }
+  // "Switch user" / header "Switch": works for DEV and for cashiers
+  function switchAway() {
+    if (currentUser === "DEV") leaveDev(); else lsSet(K.c, null);
+    showWelcome();
+  }
+  // true if this device still holds a valid Supabase session that belongs to a dev_admins user
+  async function tryResumeDev() {
+    if (!sb) return false;
+    try {
+      var res = await Promise.race([
+        sb.auth.getSession(),
+        new Promise(function (_, rej) { setTimeout(function () { rej(new Error("timeout")); }, 6000); })
+      ]);
+      var user = res && res.data && res.data.session && res.data.session.user;
+      if (!(user && user.id)) return false;
+      var chk = await sb.from('dev_admins').select('user_id').eq('user_id', user.id).limit(1);
+      if (!(chk.data && chk.data.length)) return false;
+      isDevSession = true; devEmail = user.email || devEmail; adminUser = devEmail; isAdmin = true;
+      lsSet('orca_admin', { email: devEmail, dev: true });
+      return true;
+    } catch (e) { console.warn('DEV resume failed', e); return false; }
+  }
+  // ONLY the DEV tile calls this: resume silently if still logged in, otherwise ask for email + password
+  async function openDevEntry() {
+    if (Date.now() - welcomeShownAt < 500) return;      // ignore ghost taps right after the screen appears
+    var ok = false;
+    try {
+      ok = await Promise.race([tryResumeDev(), new Promise(function (r) { setTimeout(function () { r(false); }, 3500); })]);
+    } catch (e) { ok = false; }
+    if (ok) { devAutoOpenPanel = false; enterDevSession(); }
+    else openDevSignIn();
+  }
 
   // ---------- User restriction management ----------
   function getRestrictionsMap() {
@@ -51,6 +126,7 @@
   }
 
   async function restrictUser(userName, reason, type) {
+    if (!(currentUser === "DEV" && isAdmin)) return;
     var map = getRestrictionsMap();
     var rData = {
       active: true,
@@ -79,6 +155,7 @@
   }
 
   async function unrestrictUser(userName) {
+    if (!(currentUser === "DEV" && isAdmin)) return;
     var map = getRestrictionsMap();
     if (map[userName]) {
       delete map[userName];
@@ -244,71 +321,97 @@
     buzz(20);
   }
 
-  function openAdminLogin(){
+  function openDevSignIn(){
     isAdmin = false; adminUser = null;
     try { localStorage.removeItem('orca_admin'); } catch(e){}
+    var toggled = false;
     openModal(
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
         '<div style="display:flex;align-items:center;gap:8px;">' +
           '<div style="width:32px;height:32px;border-radius:8px;background:rgba(251,191,36,.15);color:#fbbf24;display:flex;align-items:center;justify-content:center;">' +
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
           '</div>' +
-          '<h3 style="margin:0;font-size:18px;font-weight:800;">Admin Login</h3>' +
+          '<h3 style="margin:0;font-size:18px;font-weight:800;">Developer Sign In</h3>' +
         '</div>' +
-        '<button id="alx" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);">×</button>' +
+        '<button id="devx" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);">×</button>' +
       '</div>' +
-      '<p style="margin:0 0 12px;font-size:13px;color:var(--muted);">Sign in to access user restrictions and broadcast alerts.</p>' +
-      '<input id="alEmail" type="text" placeholder="Admin Email / Username" style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--card2);color:var(--text);">' +
-      '<input id="alPass" type="password" placeholder="Password" style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card2);color:var(--text);">' +
-      '<button id="alLogin" class="bigbtn btn-primary" style="width:100%;padding:13px;border-radius:12px;border:none;font-weight:800;">Sign In as Admin</button>' +
-      '<p id="alErr" style="display:none;color:#f87171;font-size:12px;margin:8px 0 0;text-align:center;font-weight:700;">Invalid credentials</p>'
+      '<p style="margin:0 0 12px;font-size:13px;color:var(--muted);">Sign in with your Supabase account to access the developer panel.</p>' +
+      '<input id="devEmail" type="email" placeholder="Email" style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--card2);color:var(--text);">' +
+      '<div style="position:relative;">' +
+        '<input id="devPass" type="password" placeholder="Password" style="width:100%;box-sizing:border-box;padding:12px 44px 12px 12px;border:2px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card2);color:var(--text);">' +
+        '<button id="devPassToggle" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);padding:4px;cursor:pointer;" aria-label="Show password">' +
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8"/><circle cx="12" cy="12" r="3"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<button id="devLogin" class="bigbtn btn-primary" style="width:100%;padding:13px;border-radius:12px;border:none;font-weight:800;">Sign In as Developer</button>' +
+      '<p id="devErr" style="display:none;color:#f87171;font-size:12px;margin:8px 0 0;text-align:center;font-weight:700;"></p>'
     );
-    document.getElementById('alx').onclick = closeModal;
-    document.getElementById('alPass').onkeydown = function(e){ if (e.key === 'Enter') document.getElementById('alLogin').click(); };
-    document.getElementById('alLogin').onclick = async function(){
-      var e = document.getElementById('alEmail').value.trim();
-      var p = document.getElementById('alPass').value.trim();
-      var err = document.getElementById('alErr');
+    document.getElementById('devx').onclick = closeModal;
+    var passIn = document.getElementById('devPass');
+    var toggle = document.getElementById('devPassToggle');
+    toggle.onclick = function(){
+      toggled = !toggled;
+      passIn.type = toggled ? 'text' : 'password';
+      toggle.innerHTML = toggled
+        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8"/><circle cx="12" cy="12" r="3"/></svg>';
+    };
+    document.getElementById('devx').onclick = closeModal;
+    document.getElementById('devPass').onkeydown = function(e){ if (e.key === 'Enter') document.getElementById('devLogin').click(); };
+    document.getElementById('devLogin').onclick = async function(){
+      var e = document.getElementById('devEmail').value.trim();
+      var p = document.getElementById('devPass').value.trim();
+      var err = document.getElementById('devErr');
       err.style.display = 'none';
-      if (!e || !p) { err.textContent = 'Please enter username and password'; err.style.display='block'; return; }
-      
-      var loginSuccess = false;
-      var loggedEmail = e;
-
-      // 1. Try Supabase verification if online
-      if (sb) {
-        try {
-          var res = await sb.from('admins').select('*').eq('email', e).eq('password', p).limit(1);
-          if (res.data && res.data.length) {
-            loginSuccess = true;
-            loggedEmail = res.data[0].email;
-          }
-        } catch(ex){ console.warn('Supabase admin login attempt:', ex); }
-      }
-
-      // 2. Offline / standard admin fallback if Supabase not reachable
-      if (!loginSuccess) {
-        if ((e.toLowerCase() === 'admin' && p === 'admin123') || (e.toLowerCase() === 'orca' && p === 'orca123')) {
-          loginSuccess = true;
-          loggedEmail = e.toLowerCase() === 'admin' ? 'admin@orcapos.local' : 'orca@orcapos.local';
+      if (!e || !p) { err.textContent = 'Please enter email and password'; err.style.display='block'; return; }
+      if (!sb) { err.textContent = 'Internet needed for developer sign-in'; err.style.display='block'; return; }
+      var btn = document.getElementById('devLogin');
+      btn.disabled = true; btn.textContent = 'Signing in…';
+      try {
+        var authRes = await sb.auth.signInWithPassword({ email: e, password: p });
+        if (authRes.error) throw authRes.error;
+        var uid = authRes.data.user?.id;
+        if (!uid) throw new Error('No user id');
+        var adminCheck = await sb.from('dev_admins').select('user_id').eq('user_id', uid).limit(1);
+        if (adminCheck.error) throw adminCheck.error;
+        if (!adminCheck.data || !adminCheck.data.length) {
+          await sb.auth.signOut();
+          throw new Error('Not authorised');
         }
-      }
-
-      if (loginSuccess) {
         isAdmin = true;
-        adminUser = loggedEmail;
-        lsSet('orca_admin', { email: adminUser });
+        adminUser = authRes.data.user.email || e;
+        lsSet('orca_admin', { email: adminUser, dev: true });
+        isDevSession = true;
+        devEmail = adminUser;
+        devAutoOpenPanel = true;
         closeModal();
-        openAdminPanel();
-        toast('Admin logged in', 'ok');
-      } else {
-        err.textContent = 'Invalid credentials. Please verify your admin password.';
+        currentUser = "DEV";
+        if (!avMap["DEV"]) avSet("DEV", { i: 0 });
+        currentView = "store"; searchQuery = ""; cart = {}; utangCart = {};
+        lsSet(K.c, "DEV");
+        document.getElementById("authScreen").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        updateUserChip();
+        await refreshData();
+        render();
+        if (devAutoOpenPanel) {
+          devAutoOpenPanel = false;
+          openAdminPanel();
+        }
+        updateUserChip();
+        toast('Developer signed in', 'ok');
+        startInactivityTimer();
+      } catch (ex) {
+        btn.disabled = false; btn.textContent = 'Sign In as Developer';
+        err.textContent = ex.message || 'Sign in failed';
         err.style.display = 'block';
       }
     };
+    document.getElementById('devPass').onkeydown = function(e){ if (e.key === 'Enter') document.getElementById('devLogin').click(); };
   }
 
   function openAdminPanel(initialTab){
+    if (!(currentUser === "DEV" && isAdmin)) return;
     var activeTab = initialTab || "restrictions"; // "restrictions" or "broadcast"
     var allKnownUsers = getAllKnownUsers();
     var restrMap = getRestrictionsMap();
@@ -330,27 +433,31 @@
           '<b>Cashier Transaction Guard:</b> Restrict staff from completing checkouts and utang. A restriction pop-up will notify them immediately.' +
         '</div>' +
         '<div id="adminUserList" style="max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">' +
-          (allKnownUsers.length ? allKnownUsers.map(function(u){
-            var r = restrMap[u];
-            var isRestr = !!(r && r.active);
-            return '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card2);border:1.5px solid ' + (isRestr ? 'rgba(239,68,68,.35)' : 'var(--border)') + ';border-radius:12px;padding:10px 12px;gap:8px;">' +
-              '<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">' +
-                '<span class="ua" style="background:' + ucolor(u) + ';flex-shrink:0;">' + avTxt(u) + '</span>' +
-                '<div style="min-width:0;">' +
-                  '<div style="font-weight:800;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(u) + (u === currentUser ? ' <small style="color:var(--accent-t);font-weight:600;">(Current)</small>' : '') + '</div>' +
-                  '<div style="font-size:11px;margin-top:2px;">' +
-                    (isRestr ? 
-                      '<span style="color:#f87171;font-weight:700;">Restricted (' + esc(r.type || 'temporary') + ')</span> · <span style="color:var(--muted);">' + esc(r.reason || 'Admin hold') + '</span>' : 
-                      '<span style="color:#34d399;font-weight:700;">Active (Can Transact)</span>') +
+          (function(){
+            var list = allKnownUsers.filter(function(u){ return u !== "DEV"; });
+            if (!list.length) return '<p style="text-align:center;color:var(--muted);font-size:13px;padding:16px;">No users found yet.</p>';
+            return list.map(function(u){
+              var r = restrMap[u];
+              var isRestr = !!(r && r.active);
+              return '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card2);border:1.5px solid ' + (isRestr ? 'rgba(239,68,68,.35)' : 'var(--border)') + ';border-radius:12px;padding:10px 12px;gap:8px;">' +
+                '<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">' +
+                  '<span class="ua" style="background:' + ucolor(u) + ';flex-shrink:0;">' + avTxt(u) + '</span>' +
+                  '<div style="min-width:0;">' +
+                    '<div style="font-weight:800;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(u) + (u === currentUser ? ' <small style="color:var(--accent-t);font-weight:600;">(Current)</small>' : '') + '</div>' +
+                    '<div style="font-size:11px;margin-top:2px;">' +
+                      (isRestr ? 
+                        '<span style="color:#f87171;font-weight:700;">Restricted (' + esc(r.type || 'temporary') + ')</span> · <span style="color:var(--muted);">' + esc(r.reason || 'Admin hold') + '</span>' : 
+                        '<span style="color:#34d399;font-weight:700;">Active (Can Transact)</span>') +
+                    '</div>' +
                   '</div>' +
                 '</div>' +
-              '</div>' +
-              '<button class="bigbtn ' + (isRestr ? 'btnUnrestr' : 'btnRestr') + '" data-u="' + esc(u) + '" style="padding:7px 12px;border-radius:8px;border:none;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;' + 
-                (isRestr ? 'background:rgba(16,185,129,.18);color:#34d399;' : 'background:rgba(239,68,68,.16);color:#f87171;') + '">' +
-                (isRestr ? 'Lift' : 'Restrict') +
-              '</button>' +
-            '</div>';
-          }).join('') : '<p style="text-align:center;color:var(--muted);font-size:13px;padding:16px;">No users found yet.</p>') +
+                '<button class="bigbtn ' + (isRestr ? 'btnUnrestr' : 'btnRestr') + '" data-u="' + esc(u) + '" style="padding:7px 12px;border-radius:8px;border:none;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;' + 
+                  (isRestr ? 'background:rgba(16,185,129,.18);color:#34d399;' : 'background:rgba(239,68,68,.16);color:#f87171;') + '">' +
+                  (isRestr ? 'Lift' : 'Restrict') +
+                '</button>' +
+              '</div>';
+            }).join('');
+          })() +
         '</div>' +
       '</div>';
 
@@ -387,11 +494,7 @@
 
     document.getElementById('apx').onclick = closeModal;
     document.getElementById('adminLogoutBtn').onclick = function(){
-      isAdmin = false;
-      adminUser = null;
-      try { localStorage.removeItem('orca_admin'); } catch(e){}
-      closeModal();
-      toast('Admin logged out', 'ok');
+      signOutDev();
     };
 
     // Tab switching
@@ -479,6 +582,8 @@
           if (!targetUsers.length) { if (err){ err.textContent='Select at least one cashier'; err.style.display='block'; } return; }
         }
 
+        if (!(currentUser === "DEV" && isAdmin)) return;
+
         if (sb) {
           try {
             var id = Date.now();
@@ -551,6 +656,8 @@
     };
   }
   var view = document.getElementById("view"), modal = document.getElementById("modal"), coBar = document.getElementById("checkoutBar");
+  // pop-ups must also work on the welcome screen (#app is hidden there), so host the modal on <body>
+  if (modal && modal.parentNode !== document.body) document.body.appendChild(modal);
 
   function money(n) { return "₱" + Number(n).toFixed(2); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
@@ -739,19 +846,48 @@
   function showWelcome() {
     document.getElementById("app").style.display = "none";
     document.getElementById("authScreen").style.display = "flex";
-    var users = lsGet(K.n, []), nl = document.getElementById("nameList");
+    var users = lsGet(K.n, []).filter(function (n) { return !isDevName(n); }), nl = document.getElementById("nameList");
     var trash = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>';
-    nl.innerHTML = users.length ? '<p class="field-label">Choose your account</p><div class="acct-list">' + users.map(function (n) {
-      return '<div class="acct-row"><button class="acct-pick bigbtn" data-n="' + n + '"><span class="ua lg" style="background:' + ucolor(n) + '">' + avTxt(n) + '</span><span class="acct-name">' + n + '</span>' + (isUserRestricted(n) ? '<span style="background:rgba(239,68,68,.18);color:#f87171;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:800;margin-left:auto;">Restricted</span>' : '') + '</button>' +
-        '<button class="acct-del bigbtn" data-n="' + n + '" aria-label="Delete account ' + n + '" title="Delete account">' + trash + '</button></div>';
-    }).join("") + '</div><p class="or-line">or create a new account</p>' : "";
-    Array.prototype.forEach.call(nl.querySelectorAll(".acct-pick"), function (b) { b.onclick = function () { startSession(b.getAttribute("data-n")); }; });
+    var lockSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+    var devBadge = '<span style="background:rgba(251,191,36,.18);color:#fbbf24;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:800;margin-left:6px;display:inline-flex;align-items:center;gap:3px;">' + lockSvg + 'DEV \u00b7 Developer</span>';
+    nl.innerHTML = (users.length ? '<p class="field-label">Choose your account</p><div class="acct-list">' : '') +
+      '<div class="acct-row dev-row" style="border-top:none;padding-top:0;">' +
+        '<button class="acct-pick bigbtn" data-n="DEV" style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);">' +
+          '<span class="ua lg" style="background:rgba(251,191,36,.2);color:#fbbf24;">' + avTxt("DEV") + '</span>' +
+          '<span class="acct-name" style="color:#fbbf24;font-weight:800;">DEV</span>' + devBadge +
+        '</button>' +
+        '<span style="width:44px;"></span>' +
+      '</div>' +
+      (users.length ? users.map(function (n) {
+        return '<div class="acct-row"><button class="acct-pick bigbtn" data-n="' + n + '"><span class="ua lg" style="background:' + ucolor(n) + '">' + avTxt(n) + '</span><span class="acct-name">' + n + '</span>' + (isUserRestricted(n) ? '<span style="background:rgba(239,68,68,.18);color:#f87171;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:800;margin-left:auto;">Restricted</span>' : '') + '</button>' +
+          '<button class="acct-del bigbtn" data-n="' + n + '" aria-label="Delete account ' + n + '" title="Delete account">' + trash + '</button></div>';
+      }).join("") + '</div><p class="or-line">or create a new account</p>' : '<p class="or-line">or create a new account</p>');
+    Array.prototype.forEach.call(nl.querySelectorAll(".acct-pick"), function (b) { b.onclick = function () { var n = b.getAttribute("data-n"); if (n === "DEV") openDevEntry(); else startSession(n); }; });
     Array.prototype.forEach.call(nl.querySelectorAll(".acct-del"), function (b) { b.onclick = function () { askDeleteAccount(b.getAttribute("data-n")); }; });
     document.getElementById("nameInput").value = ""; document.getElementById("nameErr").style.display = "none";
+    welcomeShownAt = Date.now();
+  }
+  function enterDevSession() {
+    isDevSession = true; isAdmin = true; adminUser = devEmail || adminUser;
+    currentUser = "DEV"; if (!avMap["DEV"]) avSet("DEV", { i: 0 });
+    currentView = "store"; searchQuery = ""; cart = {}; utangCart = {};
+    lsSet(K.c, "DEV");
+    document.getElementById("authScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    updateUserChip();
+    return refreshData().then(function () {
+      render();
+      if (devAutoOpenPanel) { devAutoOpenPanel = false; openAdminPanel(); }
+      updateUserChip();
+      startInactivityTimer();
+    });
   }
   function startSession(name) {
     name = cleanName(name);
     if (!name) { document.getElementById("nameErr").style.display = "block"; return; }
+    if (isDevName(name)) { toast("“DEV” is reserved. Tap the DEV account to sign in."); return; }
+    isAdmin = false; adminUser = null;
+    if (modal.querySelector("#devEmail")) closeModal();
     var users = lsGet(K.n, []);
     var hit = users.find(function (u) { return u.toLowerCase() === name.toLowerCase(); });
     if (hit) name = hit; else { users.push(name); lsSet(K.n, users); }
@@ -765,14 +901,15 @@
     updateUserChip();
     refreshData().then(function () { render(); });
     if (isUserRestricted(name)) { setTimeout(function(){ showRestrictionPopup(name); }, 350); }
+    clearInactivityTimer();
   }
   document.getElementById("nameGo").onclick = function () { startSession(document.getElementById("nameInput").value); };
   document.getElementById("nameInput").onkeydown = function (e) { if (e.key === "Enter") startSession(this.value); };
-  document.getElementById("logoutBtn").onclick = function () { closeModal(); lsSet(K.c, null); showWelcome(); };
+  document.getElementById("logoutBtn").onclick = function () { closeModal(); switchAway(); };
   var adminBtnEl = document.getElementById("adminBtn");
-  if (adminBtnEl) adminBtnEl.onclick = function () { if (isAdmin && adminUser) openAdminPanel(); else openAdminLogin(); };
+  if (adminBtnEl) adminBtnEl.style.display = (currentUser === "DEV" && isAdmin) ? "" : "none";
   var authAdminBtnEl = document.getElementById("authAdminBtn");
-  if (authAdminBtnEl) authAdminBtnEl.onclick = function () { if (isAdmin && adminUser) openAdminPanel(); else openAdminLogin(); };
+  if (authAdminBtnEl) authAdminBtnEl.style.display = "none";
   document.getElementById("userChip").onclick = openSettings;
 
   // ---------- profile picture: 5 icon avatars ----------
@@ -823,6 +960,7 @@
   function renameUser(raw) {
     var nn = cleanName(raw), old = currentUser;
     if (!nn) { toast("Type a name first"); return; }
+    if (isDevName(nn)) { toast("That name is reserved"); return; }
     if (nn === old) { closeModal(); return; }
     var users = lsGet(K.n, []);
     var other = users.find(function (u) { return u.toLowerCase() === nn.toLowerCase() && u !== old; });
@@ -856,21 +994,28 @@
       '<div class="row-gap"><button id="expBtn" class="btn-ghost bigbtn" style="margin:0;flex:1;">Export backup</button>' +
       '<label class="btn-ghost bigbtn" style="margin:0;flex:1;text-align:center;display:flex;align-items:center;justify-content:center;">Restore<input id="impInput" type="file" accept="application/json,.json" style="display:none;"></label></div>' +
       '<p class="m-label">Account</p>' +
-      '<div style="background:var(--card2);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
-        '<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
-          '<div style="width:36px;height:36px;border-radius:10px;background:rgba(251,191,36,.15);color:#fbbf24;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
+      (currentUser === "DEV" && isAdmin
+        ? '<div style="background:var(--card2);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
+            '<div style="width:36px;height:36px;border-radius:10px;background:rgba(251,191,36,.15);color:#fbbf24;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
+            '</div>' +
+            '<div style="min-width:0;">' +
+              '<div style="font-weight:800;font-size:14px;color:var(--text);">Admin Panel</div>' +
+              '<div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Logged in as ' + esc(adminUser) + '</div>' +
+            '</div>' +
           '</div>' +
-          '<div style="min-width:0;">' +
-            '<div style="font-weight:800;font-size:14px;color:var(--text);">Admin Panel</div>' +
-            '<div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (isAdmin && adminUser ? 'Logged in as ' + esc(adminUser) : 'Owner & manager controls') + '</div>' +
-          '</div>' +
-        '</div>' +
-        '<button id="adminSettingsBtn" class="btn-primary bigbtn inline-btn" style="padding:8px 14px;font-size:13px;flex-shrink:0;">' + (isAdmin && adminUser ? 'Open Panel' : 'Sign In') + '</button>' +
-      '</div>' +
-      '<button id="swBtn" class="btn-ghost bigbtn" style="margin-top:0;">Switch user</button>' +
-      '<button id="exitBtn" class="btn-ghost bigbtn">Exit app</button>' +
-      '<button id="delAcc" class="btn-danger bigbtn">Delete this account</button>'
+          '<button id="adminSettingsBtn" class="btn-primary bigbtn inline-btn" style="padding:8px 14px;font-size:13px;flex-shrink:0;">Open Panel</button>' +
+        '</div>'
+        : '')
+      + (currentUser !== "DEV" ? (
+          '<button id="swBtn" class="btn-ghost bigbtn" style="margin-top:0;">Switch user</button>' +
+          '<button id="exitBtn" class="btn-ghost bigbtn">Exit app</button>' +
+          '<button id="delAcc" class="btn-danger bigbtn">Delete this account</button>'
+        ) : (
+          '<button id="swBtn" class="btn-ghost bigbtn" style="margin-top:0;">Switch user</button>' +
+          '<button id="exitBtn" class="btn-ghost bigbtn">Exit app</button>'
+        ))
     );
     document.getElementById("xSet").onclick = closeModal;
     function avDraw() {
@@ -888,16 +1033,16 @@
     var rb = document.getElementById("renameBtn");
     if (rb) rb.onclick = function () { renameUser(document.getElementById("renameInput").value); };
     var adminBtn = document.getElementById("adminSettingsBtn");
-    if (adminBtn) adminBtn.onclick = function(){ closeModal(); if (isAdmin && adminUser) openAdminPanel(); else openAdminLogin(); };
-    document.getElementById("renameInput").onkeydown = function (e) { if (e.key === "Enter") renameUser(this.value); };
+    if (adminBtn) adminBtn.onclick = function(){ closeModal(); if (currentUser === "DEV" && isAdmin) openAdminPanel(); else openDevSignIn(); };
+    var swBtn = document.getElementById("swBtn");
+    if (swBtn) swBtn.onclick = function () { closeModal(); switchAway(); };
     document.getElementById("askDel").onchange = function () { lsSet(K.sd, !this.checked); toast(this.checked ? "Item deletion will ask first" : "Item deletion won’t ask again"); };
     Array.prototype.forEach.call(modal.querySelectorAll(".theme-opt"), function (b) {
       b.onclick = function () { applyTheme(b.getAttribute("data-t")); Array.prototype.forEach.call(modal.querySelectorAll(".theme-opt"), function (x) { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); }); };
     });
     var ib = document.getElementById("installBtn");
     if (ib) ib.onclick = function () { deferredInstall.prompt(); deferredInstall.userChoice.then(function () { deferredInstall = null; closeModal(); }); };
-    document.getElementById("swBtn").onclick = function () { closeModal(); lsSet(K.c, null); showWelcome(); };
-    document.getElementById("exitBtn").onclick = askExit;
+        document.getElementById("exitBtn").onclick = askExit;
     document.getElementById("delAcc").onclick = function () { var n = currentUser; closeModal(); askDeleteAccount(n); };
     document.getElementById("expBtn").onclick = function () {
       var data = { app: "orca-pos", v: 1, exported: new Date().toISOString(), products: products, transactions: transactions, utang: utang, daily: lsGet(K.d, {}), users: lsGet(K.n, []), avatars: avMap };
@@ -1588,9 +1733,21 @@ transactions.forEach(function (t) {
   if (navigator.storage && navigator.storage.persist) { navigator.storage.persist().catch(function () { }); }
   applyTheme(lsGet(K.th, "abyss"));
   var splash = document.getElementById("splash"); if (splash) { splash.classList.add("done"); setTimeout(function () { splash.remove(); }, 350); }
-  var lastUser = lsGet(K.c, null);
-  var adminSess = lsGet('orca_admin', null);
-  if (adminSess && adminSess.email) { isAdmin = true; adminUser = adminSess.email; }
+
+  async function restoreDevSession() {
+    var lastUser = lsGet(K.c, null);
+    // draw the welcome screen / last cashier IMMEDIATELY (never wait on the network)
+    if (lastUser && !isDevName(lastUser)) startSession(lastUser); else showWelcome();
+    // DEV was the last user: quietly resume the developer session in the background
+    if (lastUser && isDevName(lastUser) && await tryResumeDev()) {
+      devAutoOpenPanel = false;      // resuming after a reload: don't pop the panel again
+      await enterDevSession();
+    }
+  }
+  restoreDevSession();
+
   try { syncNotifications(); setInterval(syncNotifications, 30000); } catch(e){}
-  if (lastUser) startSession(lastUser); else showWelcome();
+  ['click','keydown','touchstart','mousemove'].forEach(function(evt){
+    window.addEventListener(evt, resetInactivityTimer, { passive: true });
+  });
 })();
