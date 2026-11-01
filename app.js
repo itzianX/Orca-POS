@@ -168,13 +168,16 @@
           if (!targetUsers.length) { if (err){ err.textContent='Select at least one user'; err.style.display='block'; } return; }
         }
         if (!sb) { if (err){ err.textContent='Not connected to Supabase'; err.style.display='block'; } return; }
-        try {
-          var id = Date.now();
-          var res = await sb.from('notifications').insert({ id:id, title:title, message:msg, type:'info', target_type:target, target_users:targetUsers, created_by: adminUser||'admin' });
-          if (res && res.error) { if (err){ err.textContent=res.error.message; err.style.display='block'; } return; }
-          closeModal(); toast('✓ Notification sent','ok');
-          await syncNotifications();
-        } catch(ex){ if (err){ err.textContent='Failed to send'; err.style.display='block'; } }
+      try {
+        var id = Date.now();
+        var res = await sb.from('notifications').insert({ id:id, title:title, message:msg, type:'info', target_type:target, target_users:targetUsers, created_by: adminUser||'admin' });
+        if (res && res.error) { if (err){ err.textContent=res.error.message; err.style.display='block'; } return; }
+        closeModal(); toast('✓ Notification sent','ok');
+        await syncNotifications();
+        isAdmin = false; adminUser = null;
+        try { localStorage.removeItem('orca_admin'); } catch(e){}
+        toast('Admin logged out', 'ok');
+      } catch(ex){ if (err){ err.textContent='Failed to send'; err.style.display='block'; } }
       };
     }
   }
