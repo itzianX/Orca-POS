@@ -162,33 +162,50 @@
     } catch(e) { console.error('notif sync error:', e); }
   }
 
+  // Rebuild every user's restriction state from the notification log IN CHRONOLOGICAL ORDER.
+  // (The log arrives newest-first; replaying it in that order let an OLD "restriction"
+  //  event re-apply itself after a NEWER "unrestrict" event had already lifted it.)
+  function notifTime(n) {
+    var t = n && n.created_at ? new Date(n.created_at).getTime() : NaN;
+    return isNaN(t) ? (Number(n && n.id) || 0) : t;
+  }
+  function applyRestrictionEvents() {
+    var evs = notifications.filter(function(n){
+      return (n.type === 'restriction' || n.type === 'unrestrict') && Array.isArray(n.target_users);
+    });
+    evs.sort(function(a, b){ return (notifTime(a) - notifTime(b)) || ((Number(a.id) || 0) - (Number(b.id) || 0)); });
+    var latest = {};                       // newest event per user wins
+    evs.forEach(function(n){ n.target_users.forEach(function(u){ latest[u] = n; }); });
+
+    var map = getRestrictionsMap(), changed = false;
+    Object.keys(latest).forEach(function(u){
+      var n = latest[u], local = map[u], localOn = !!(local && local.active);
+      if (n.type === 'restriction') {
+        if (!localOn) {
+          map[u] = { active: true, reason: n.message || "Restricted by Store Administrator", type: "temporary",
+                     restricted_at: n.created_at, restricted_by: n.created_by || "Admin" };
+          changed = true;
+        }
+      } else if (localOn) {
+        // lift only if the lift is not older than the local restriction
+        var localAt = local.restricted_at ? new Date(local.restricted_at).getTime() : 0;
+        if (notifTime(n) >= localAt) { delete map[u]; changed = true; }
+      } else if (local) {                  // stale inactive record
+        delete map[u]; changed = true;
+      }
+    });
+    if (changed) {
+      setRestrictionsMap(map);
+      try { updateUserChip(); } catch(e){}
+      try { if (currentUser && modal.style.display !== "flex") render(); } catch(e){}
+    }
+  }
+
   function checkAndShowNotifications() {
     if (!notifications.length) return;
     var myName = currentUser || displayName(currentUser);
+    applyRestrictionEvents();
     notifications.forEach(function(n){
-      // Check if notification affects restrictions
-      if (n.type === 'restriction' && Array.isArray(n.target_users)) {
-        if (n.target_users.indexOf(myName) >= 0 || n.target_users.indexOf(currentUser) >= 0) {
-          var map = getRestrictionsMap();
-          map[myName] = {
-            active: true,
-            reason: n.message || "Restricted by Store Administrator",
-            type: "temporary",
-            restricted_at: n.created_at,
-            restricted_by: n.created_by || "Admin"
-          };
-          setRestrictionsMap(map);
-        }
-      } else if (n.type === 'unrestrict' && Array.isArray(n.target_users)) {
-        if (n.target_users.indexOf(myName) >= 0 || n.target_users.indexOf(currentUser) >= 0) {
-          var map = getRestrictionsMap();
-          if (map[myName]) {
-            delete map[myName];
-            setRestrictionsMap(map);
-          }
-        }
-      }
-
       if (shownNotifs.indexOf(String(n.id)) >= 0) return;
       var show = false;
       if (n.target_type === 'all') show = true;
@@ -197,7 +214,7 @@
       }
       if (show) {
         if (n.type === 'restriction') {
-          showRestrictionPopup(myName, { reason: n.message, type: 'temporary', restricted_at: n.created_at, restricted_by: n.created_by });
+          if (isUserRestricted(myName)) showRestrictionPopup(myName, { reason: n.message, type: 'temporary', restricted_at: n.created_at, restricted_by: n.created_by });
         } else {
           showNotificationPopup(n);
         }
