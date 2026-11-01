@@ -639,7 +639,7 @@ select {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 0 max(10px, env(safe-area-inset-left)) 0 max(10px, env(safe-area-inset-right));
+  padding: 16px max(20px, env(safe-area-inset-left)) 16px max(20px, env(safe-area-inset-right));
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -648,11 +648,13 @@ select {
 #modal > .pop {
   position: relative;
   z-index: 1002;
-  width: min(520px, calc(100% - 20px));
-  max-width: calc(100% - 20px);
+  width: min(440px, calc(100% - 8px));
+  max-width: calc(100% - 8px);
   margin: auto;
   box-sizing: border-box;
-  max-height: min(92dvh, calc(100% - 24px));
+  max-height: min(86dvh, calc(100% - 32px));
+  overflow-x: hidden;
+  overflow-wrap: break-word;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -863,7 +865,7 @@ textarea {
 
 .modal>.pop {
   padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
-  max-height: 92dvh !important;
+  max-height: 86dvh !important;
 }
 
 .icon-btn {
@@ -1738,7 +1740,7 @@ body {
 
 .modal.center>.pop {
   border-radius: 24px !important;
-  max-width: 380px !important;
+  max-width: 340px !important;
   padding-bottom: 18px !important;
 }
 
@@ -2999,4 +3001,39 @@ body {
   .welcome { padding: 14px 10px; }
   .welcome-orca { width: 85px; height: 64px; }
   .welcome-txt h2 { font-size: 19px; }
+}
+
+/* ---------- pop-ups: slightly smaller, nothing clipped at the sides ---------- */
+#modal > .pop {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+#modal > .pop * {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+#modal > .pop input,
+#modal > .pop select,
+#modal > .pop textarea {
+  width: 100%;
+  min-width: 0;
+}
+
+#modal > .pop img {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 380px) {
+  #modal {
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+  #modal > .pop {
+    width: calc(100% - 4px);
+    padding-left: 14px;
+    padding-right: 14px;
+  }
 }
