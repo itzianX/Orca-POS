@@ -30,6 +30,155 @@
   var products = [], transactions = [], utang = [];
   var currentUser = null, currentView = "store", searchQuery = "", itemsSearchQuery = "";
   var cart = {}, utangCart = {}, cashInput = "";
+  var isAdmin = false, adminUser = null, notifications = [], shownNotifs = lsGet("orca_shown_notifs", []);
+  function getAllKnownUsers() {
+    var set = {};
+    if (currentUser) set[currentUser] = true;
+    try {
+      var users = lsGet(K.n, {});
+      Object.keys(users).forEach(function(k){ set[k] = true; });
+    } catch(e){}
+    transactions.forEach(function(t){ if(t.user_name) set[t.user_name] = true; });
+    utang.forEach(function(u){ if(u.accepted_name) set[u.accepted_name] = true; });
+    return Object.keys(set).sort();
+  }
+  async function syncNotifications() {
+    if (!sb) return;
+    try {
+      var res = await sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(50);
+      if (res.data) {
+        notifications = res.data.map(function(n){ 
+          return { id: n.id, title: n.title, message: n.message, type: n.type||'info', target_type: n.target_type||'all', target_users: n.target_users||[], created_by: n.created_by||'', created_at: n.created_at }; 
+        });
+        checkAndShowNotifications();
+      }
+    } catch(e) { console.error('notif sync error:', e); }
+  }
+  function checkAndShowNotifications() {
+    if (!notifications.length) return;
+    var myName = currentUser || displayName(currentUser);
+    notifications.forEach(function(n){
+      if (shownNotifs.indexOf(String(n.id)) >= 0) return;
+      var show = false;
+      if (n.target_type === 'all') show = true;
+      else if (n.target_type === 'specific') {
+        if (Array.isArray(n.target_users)) {
+          if (n.target_users.indexOf(myName) >= 0 || n.target_users.indexOf(currentUser) >= 0) show = true;
+        }
+      }
+      if (show) {
+        showNotificationPopup(n);
+        shownNotifs.push(String(n.id));
+        lsSet("orca_shown_notifs", shownNotifs);
+      }
+    });
+  }
+  function showNotificationPopup(n) {
+    var modalHtml = 
+      '<div style="text-align:center;margin-bottom:12px;">' +
+      '<div style="width:60px;height:60px;border-radius:50%;background:rgba(103,78,167,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">' +
+      '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
+      '</div>' +
+      '<h3 style="margin:0 0 6px;font-size:18px;font-weight:800;">' + esc(n.title) + '</h3>' +
+      '<p style="margin:0;color:var(--muted);font-size:14px;line-height:1.5;white-space:pre-wrap;">' + esc(n.message) + '</p>' +
+      '</div>' +
+      '<button id="notifOk" class="bigbtn" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent);color:var(--on-accent);font-size:15px;font-weight:800;">Got it</button>';
+    openModal(modalHtml);
+    document.getElementById('notifOk').onclick = closeModal;
+    buzz(20);
+  }
+  function openAdminLogin(){
+    openModal(
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="margin:0;font-size:18px;font-weight:800;">Admin Login</h3><button id="alx" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);">×</button></div>' +
+      '<input id="alEmail" type="text" placeholder="Email/Username" style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--card2);color:var(--text);">' +
+      '<input id="alPass" type="password" placeholder="Password" style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card2);color:var(--text);">' +
+      '<button id="alLogin" class="bigbtn" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent);color:var(--on-accent);font-weight:800;">Login</button>' +
+      '<p id="alErr" style="display:none;color:#f87171;font-size:12px;margin:6px 0 0;text-align:center;">Invalid credentials</p>'
+    );
+    document.getElementById('alx').onclick = closeModal;
+    document.getElementById('alLogin').onclick = async function(){
+      var e = document.getElementById('alEmail').value.trim();
+      var p = document.getElementById('alPass').value.trim();
+      var err = document.getElementById('alErr');
+      err.style.display = 'none';
+      if (!sb) { err.textContent = 'Not connected to Supabase'; err.style.display='block'; return; }
+      try {
+        var res = await sb.from('admins').select('*').eq('email', e).eq('password', p).limit(1);
+        if (res.data && res.data.length) {
+          isAdmin = true; adminUser = res.data[0].email;
+          lsSet('orca_admin', {email: adminUser});
+          closeModal(); openAdminPanel(); toast('✓ Admin logged in','ok');
+        } else { err.textContent='Invalid credentials'; err.style.display='block'; }
+      } catch(ex){ err.textContent='Login failed'; err.style.display='block'; }
+    };
+  }
+  function openAdminPanel(){
+    var allKnownUsers = getAllKnownUsers();
+    openModal(
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h3 style="margin:0;font-size:18px;font-weight:800;">Admin Panel</h3><button id="apx" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);">×</button></div>' +
+      '<p style="margin:0 0 10px;font-size:12px;color:var(--muted);">Send notification popup to users</p>' +
+      '<input id="ntTitle" type="text" placeholder="Title" style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--card2);color:var(--text);">' +
+      '<textarea id="ntMsg" placeholder="Message" style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card2);color:var(--text);min-height:80px;resize:vertical;"></textarea>' +
+      '<div style="margin-bottom:10px;"><label style="display:flex;align-items:center;gap:8px;font-weight:700;"><input type="radio" name="ntTarget" value="all" checked> Send to all users</label>' +
+      '<label style="display:flex;align-items:center;gap:8px;font-weight:700;margin-top:6px;"><input type="radio" name="ntTarget" value="specific"> Send to specific users</label></div>' +
+      '<div id="ntUsers" style="display:none;max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:10px;"></div>' +
+      '<button id="ntSend" class="bigbtn" style="width:100%;padding:12px;border-radius:12px;border:none;background:#10b981;color:#052e16;font-weight:800;">Send Notification</button>' +
+      '<p id="ntErr" style="display:none;color:#f87171;font-size:12px;margin:6px 0 0;text-align:center;"></p>'
+    );
+    var apx = document.getElementById('apx');
+    if (apx) apx.onclick = closeModal;
+    var radios = document.getElementsByName('ntTarget') || [];
+    var usersDiv = document.getElementById('ntUsers');
+    function toggleUsers(){ 
+      if (!radios.length) return;
+      var v = Array.prototype.find.call(radios,function(r){return r.checked;});
+      if (!v) return;
+      if (usersDiv) usersDiv.style.display = v.value==='specific'?'block':'none';
+    }
+    if (radios[0]) radios[0].onchange = toggleUsers;
+    if (radios[1]) radios[1].onchange = toggleUsers;
+    toggleUsers();
+    if (usersDiv) {
+      Array.prototype.forEach.call(allKnownUsers, function(u){
+        var row = document.createElement('label');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 4px;';
+        row.innerHTML = '<input type="checkbox" value="'+esc(u)+'"> <span>'+esc(u)+'</span>';
+        if (usersDiv && usersDiv.appendChild) usersDiv.appendChild(row);
+      });
+    }
+    var ntSend = document.getElementById('ntSend');
+    if (ntSend) {
+      ntSend.onclick = async function(){
+        var titleEl = document.getElementById('ntTitle');
+        var msgEl = document.getElementById('ntMsg');
+        var title = titleEl ? titleEl.value.trim() : '';
+        var msg = msgEl ? msgEl.value.trim() : '';
+        var err = document.getElementById('ntErr'); if (err) err.style.display='none';
+        if (!title || !msg) { if (err){ err.textContent='Title and message required'; err.style.display='block'; } return; }
+        var target = radios.length ? (Array.prototype.find.call(radios,function(r){return r.checked;})||{value:'all'}).value : 'all';
+        var targetUsers = [];
+        if (target === 'specific' && usersDiv) {
+          var checks = [];
+          try {
+            if (typeof usersDiv.querySelectorAll === 'function') {
+              checks = usersDiv.querySelectorAll('input[type=checkbox]:checked');
+            }
+          } catch(e) { checks = []; }
+          Array.prototype.forEach.call(checks, function(c){ if (c && c.value) targetUsers.push(c.value); });
+          if (!targetUsers.length) { if (err){ err.textContent='Select at least one user'; err.style.display='block'; } return; }
+        }
+        if (!sb) { if (err){ err.textContent='Not connected to Supabase'; err.style.display='block'; } return; }
+        try {
+          var id = Date.now();
+          var res = await sb.from('notifications').insert({ id:id, title:title, message:msg, type:'info', target_type:target, target_users:targetUsers, created_by: adminUser||'admin' });
+          if (res && res.error) { if (err){ err.textContent=res.error.message; err.style.display='block'; } return; }
+          closeModal(); toast('✓ Notification sent','ok');
+          await syncNotifications();
+        } catch(ex){ if (err){ err.textContent='Failed to send'; err.style.display='block'; } }
+      };
+    }
+  }
+  var isAdmin = false, adminUser = null, notifications = [], shownNotifs = lsGet("orca_shown_notifs", []);
   var view = document.getElementById("view"), modal = document.getElementById("modal"), coBar = document.getElementById("checkoutBar");
 
   function money(n) { return "₱" + Number(n).toFixed(2); }
@@ -204,7 +353,7 @@
   function applyTheme(t) {
     var th = THEMES.find(function (x) { return x[0] === t; }) || THEMES[0];
     document.documentElement.setAttribute("data-theme", th[0]); lsSet(K.th, th[0]);
-    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", th[3]);
+    var m = (document.querySelector) ? document.querySelector('meta[name="theme-color"]') : null; if (m) m.setAttribute("content", th[3]);
   }
   function showWelcome() {
     document.getElementById("app").style.display = "none";
@@ -227,10 +376,11 @@
     if (hit) name = hit; else { users.push(name); lsSet(K.n, users); }
     lsSet(K.c, name);
     currentUser = name; if (!avMap[name]) avSet(name, { i: 0 });
-    currentView = "store"; searchQuery = ""; cart = {}; utangCart = {};
+    currentView = "store"; searchQuery = ""; if (typeof cart === 'undefined') cart = {}; if (typeof utangCart === 'undefined') utangCart = {}; cart = {}; utangCart = {};
     document.getElementById("authScreen").style.display = "none";
     document.getElementById("app").style.display = "block";
-    Array.prototype.forEach.call(document.querySelectorAll(".navbtn"), function (x) { x.classList.toggle("active", x.getAttribute("data-view") === "store"); });
+    var navBtns = (document.querySelectorAll) ? document.querySelectorAll(".navbtn") : [];
+    Array.prototype.forEach.call(navBtns, function (x) { x.classList.toggle("active", x.getAttribute("data-view") === "store"); });
     updateUserChip();
     refreshData().then(function () { render(); });
   }
@@ -311,6 +461,10 @@
       '<div class="m-head"><h3>Settings</h3><button id="xSet" class="bigbtn x-btn" aria-label="Close settings">×</button></div>' +
       '<p class="m-label" style="margin-top:2px;">Your name</p><div class="row-gap"><input id="renameInput" type="text" class="text-input" style="margin:0;flex:1;" maxlength="16" autocomplete="off" aria-label="Your name" value="' + esc(currentUser) + '"><button id="renameBtn" class="btn-primary bigbtn inline-btn">Save</button></div>' +
       '<p class="m-label">Profile picture</p><div class="av-row"><span id="avPrev" class="av-prev"></span><div id="avGrid" class="av-grid" role="radiogroup" aria-label="Profile picture"></div></div>' +
+      '<p class="m-label">Account</p><div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+      '<div><div style="font-weight:800;">Admin</div><div style="font-size:12px;color:var(--muted);">' + (isAdmin ? 'Logged in as ' + esc(adminUser||'admin') : 'Admin access') + '</div></div>' +
+      '<button id="adminSettingsBtn" class="btn-primary bigbtn inline-btn">' + (isAdmin ? 'Open Panel' : 'Login') + '</button>' +
+      '</div>' +
       '<p class="m-label">Look</p><div class="theme-grid">' + THEMES.map(function (t) {
         return '<button class="theme-opt bigbtn' + (t[0] === cur ? " on" : "") + '" data-t="' + t[0] + '"><span class="theme-prev tp-' + t[0] + '"><i></i><i></i></span><b>' + t[1] + '</b><small>' + t[2] + '</small></button>';
       }).join("") + '</div>' +
@@ -337,7 +491,10 @@
       b.onclick = function () { avSet(currentUser, { i: i }); avDraw(); }; document.getElementById("avGrid").appendChild(b);
     });
     avDraw();
-    document.getElementById("renameBtn").onclick = function () { renameUser(document.getElementById("renameInput").value); };
+    var rb = document.getElementById("renameBtn");
+    if (rb) rb.onclick = function () { renameUser(document.getElementById("renameInput").value); };
+    var adminBtn = document.getElementById("adminSettingsBtn");
+    if (adminBtn) adminBtn.onclick = function(){ if (isAdmin) openAdminPanel(); else openAdminLogin(); };
     document.getElementById("renameInput").onkeydown = function (e) { if (e.key === "Enter") renameUser(this.value); };
     document.getElementById("askDel").onchange = function () { lsSet(K.sd, !this.checked); toast(this.checked ? "Item deletion will ask first" : "Item deletion won’t ask again"); };
     Array.prototype.forEach.call(modal.querySelectorAll(".theme-opt"), function (b) {
@@ -892,7 +1049,8 @@ transactions.forEach(function (t) {
     var showLive = !calcErr && calcTokens.length >= 2 && calcCur !== "";
     live.textContent = showLive ? "= " + fmtNum(calcEval(calcTokens, calcCur)) : "\u00a0";
     var pending = (calcCur === "" && calcTokens.length && CALC_OPS.indexOf(calcTokens[calcTokens.length - 1]) >= 0) ? calcTokens[calcTokens.length - 1] : "";
-    Array.prototype.forEach.call(document.querySelectorAll("#calcPad .op"), function (b) { var on = b.getAttribute("data-k") === pending; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+    var opBtns = (document.querySelectorAll) ? document.querySelectorAll("#calcPad .op") : [];
+    Array.prototype.forEach.call(opBtns, function (b) { var on = b.getAttribute("data-k") === pending; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
     var hl = document.getElementById("calcHist");
     hl.innerHTML = calcHist.length ? '<h3 class="card-h list-h">Recent</h3>' + calcHist.map(function (h, i) { return '<button class="calc-h bigbtn" data-i="' + i + '"><span>' + esc(h.e) + '</span><b>= ' + fmtNum(h.r) + '</b></button>'; }).join("") : "";
     Array.prototype.forEach.call(hl.querySelectorAll(".calc-h"), function (b) {
@@ -989,5 +1147,8 @@ transactions.forEach(function (t) {
   applyTheme(lsGet(K.th, "abyss"));
   var splash = document.getElementById("splash"); if (splash) { splash.classList.add("done"); setTimeout(function () { splash.remove(); }, 350); }
   var lastUser = lsGet(K.c, null);
+  var adminSess = lsGet('orca_admin', null);
+  if (adminSess && adminSess.email) { isAdmin = true; adminUser = adminSess.email; }
+  try { syncNotifications(); setInterval(syncNotifications, 30000); } catch(e){}
   if (lastUser) startSession(lastUser); else showWelcome();
 })();
