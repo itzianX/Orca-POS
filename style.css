@@ -3014,10 +3014,24 @@ body {
   max-width: 100%;
 }
 
-#modal > .pop input,
+#modal > .pop input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),
 #modal > .pop select,
 #modal > .pop textarea {
   width: 100%;
+  min-width: 0;
+}
+
+/* checkboxes / radios keep their own small size and never shrink */
+#modal > .pop input[type=checkbox],
+#modal > .pop input[type=radio] {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  flex: 0 0 24px;
+}
+
+#modal > .pop .chk-row span {
+  flex: 1;
   min-width: 0;
 }
 
