@@ -713,7 +713,15 @@
 
   // ---------- profiles: just a typed name, no sign-in ----------
   var deferredInstall = null;
-  var THEMES = [["abyss", "Abyss", "Deep-sea navy", "#0b1120"], ["orca", "Orca", "Black & white", "#050505"], ["arctic", "Arctic", "Light ice", "#e8f1f9"], ["christmas", "Orca Fox", "Blue-grey palette", "#0f172a"], ["mint", "Mint", "Fresh green", "#0a1a12"]];
+  var THEMES = [
+    ["abyss", "Abyss", "Deep-sea navy", "#0b1120", ["#0b1120", "#141c2e", "#7ab8dc", "#eef3fa"]],
+    ["orca", "Orca", "Black & white", "#050505", ["#050505", "#121212", "#e5e7eb", "#f5f5f5"]],
+    ["arctic", "Arctic", "Light ice", "#dce7f3", ["#dce7f3", "#ffffff", "#1d6fa5", "#0b1b2e"]],
+    ["christmas", "Orca Fox", "Violet & slate", "#0f172a", ["#0f172a", "#16223a", "#8a74c9", "#e0ecef"]],
+    ["mint", "Mint", "Fresh green", "#0a1a12", ["#0a1a12", "#12261c", "#34d399", "#d9fbe9"]],
+    ["sunset", "Sunset", "Warm amber", "#1a0f0a", ["#1a0f0a", "#2a1810", "#fb923c", "#fff1e6"]],
+    ["rose", "Rose", "Light blush", "#fbe8ee", ["#fbe8ee", "#ffffff", "#be185d", "#3b0d1f"]]
+  ];
   function toast(msg, kind) {
     var t = document.getElementById("toast"); if (!t) return;
     t.textContent = msg; t.classList.toggle("ok", kind === "ok"); t.classList.add("show");
@@ -840,7 +848,7 @@
       '<p class="m-label" style="margin-top:2px;">Your name</p><div class="row-gap"><input id="renameInput" type="text" class="text-input" style="margin:0;flex:1;" maxlength="16" autocomplete="off" aria-label="Your name" value="' + esc(currentUser) + '"><button id="renameBtn" class="btn-primary bigbtn inline-btn">Save</button></div>' +
       '<p class="m-label">Profile picture</p><div class="av-row"><span id="avPrev" class="av-prev"></span><div id="avGrid" class="av-grid" role="radiogroup" aria-label="Profile picture"></div></div>' +
       '<p class="m-label">Look</p><div class="theme-grid">' + THEMES.map(function (t) {
-        return '<button class="theme-opt bigbtn' + (t[0] === cur ? " on" : "") + '" data-t="' + t[0] + '"><span class="theme-prev tp-' + t[0] + '"><i></i><i></i></span><b>' + t[1] + '</b><small>' + t[2] + '</small></button>';
+        return '<button class="theme-opt bigbtn' + (t[0] === cur ? " on" : "") + '" data-t="' + t[0] + '" aria-pressed="' + (t[0] === cur) + '"><span class="theme-prev" style="--p-bg:' + t[4][0] + ';--p-card:' + t[4][1] + ';--p-ac:' + t[4][2] + ';--p-tx:' + t[4][3] + '"><i></i><i></i></span><b>' + t[1] + '</b><small>' + t[2] + '</small></button>';
       }).join("") + '</div>' +
       '<p class="m-label">Items</p><label class="chk-row" style="margin-bottom:0;"><input type="checkbox" id="askDel"' + (lsGet(K.sd, false) ? "" : " checked") + '><span>Ask before deleting an item</span></label>' +
       '<p class="m-label">Install as app</p>' + inst +
@@ -884,7 +892,7 @@
     document.getElementById("renameInput").onkeydown = function (e) { if (e.key === "Enter") renameUser(this.value); };
     document.getElementById("askDel").onchange = function () { lsSet(K.sd, !this.checked); toast(this.checked ? "Item deletion will ask first" : "Item deletion won’t ask again"); };
     Array.prototype.forEach.call(modal.querySelectorAll(".theme-opt"), function (b) {
-      b.onclick = function () { applyTheme(b.getAttribute("data-t")); Array.prototype.forEach.call(modal.querySelectorAll(".theme-opt"), function (x) { x.classList.toggle("on", x === b); }); };
+      b.onclick = function () { applyTheme(b.getAttribute("data-t")); Array.prototype.forEach.call(modal.querySelectorAll(".theme-opt"), function (x) { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); }); };
     });
     var ib = document.getElementById("installBtn");
     if (ib) ib.onclick = function () { deferredInstall.prompt(); deferredInstall.userChoice.then(function () { deferredInstall = null; closeModal(); }); };
@@ -1378,7 +1386,7 @@ await refreshData(); renderAdd();
             '<span style="color:var(--muted);line-height:1.4;display:block;">Permanently removes the order from today\'s revenue and stats. Cannot be undone.</span>' +
           '</div>' +
           '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;">' +
-            '<b style="color:#38bdf8;display:flex;align-items:center;gap:4px;margin-bottom:2px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg> Drawer Cash:</b>' +
+            '<b style="color:var(--accent-t);display:flex;align-items:center;gap:4px;margin-bottom:2px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg> Drawer Cash:</b>' +
             '<span style="color:var(--muted);line-height:1.4;display:block;">If cash was already collected, manually refund it to customer or adjust your physical drawer.</span>' +
           '</div>' +
         '</div>' +
