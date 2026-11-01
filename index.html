@@ -85,6 +85,12 @@
         <button id="nameGo" class="btn-primary bigbtn">Start Selling</button>
       </div>
       <p class="footer-note">No password needed. Every sale is tagged with your name, and data stays on this device.</p>
+      <div style="text-align:center;margin-top:14px;">
+        <button id="authAdminBtn" class="bigbtn" style="background:var(--card2);border:1.5px solid var(--border);border-radius:12px;padding:9px 18px;color:#fbbf24;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Admin Portal</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -102,7 +108,12 @@
           </div>
         </div>
         <div class="header-right">
-                    <button id="userChip" class="user-chip bigbtn" title="Settings">
+          <button id="adminBtn" class="icon-btn labeled bigbtn" title="Admin Control Panel" aria-label="Admin Control Panel">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg><span>Admin</span>
+          </button>
+          <button id="userChip" class="user-chip bigbtn" title="Settings">
             <span id="userAvatar" class="user-avatar">?</span>
             <span id="userName" class="user-name">Staff</span>
           </button>

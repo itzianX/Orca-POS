@@ -520,6 +520,13 @@ select {
 
 #adminBtn {
   color: #fbbf24;
+  border-color: rgba(251, 191, 36, .35);
+}
+
+#adminBtn:hover,
+#adminBtn:active {
+  background: rgba(251, 191, 36, .12);
+  border-color: #fbbf24;
 }
 
 .view {
