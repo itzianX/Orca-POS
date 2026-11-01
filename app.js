@@ -822,10 +822,6 @@
       '<div class="m-head"><h3>Settings</h3><button id="xSet" class="bigbtn x-btn" aria-label="Close settings">×</button></div>' +
       '<p class="m-label" style="margin-top:2px;">Your name</p><div class="row-gap"><input id="renameInput" type="text" class="text-input" style="margin:0;flex:1;" maxlength="16" autocomplete="off" aria-label="Your name" value="' + esc(currentUser) + '"><button id="renameBtn" class="btn-primary bigbtn inline-btn">Save</button></div>' +
       '<p class="m-label">Profile picture</p><div class="av-row"><span id="avPrev" class="av-prev"></span><div id="avGrid" class="av-grid" role="radiogroup" aria-label="Profile picture"></div></div>' +
-      '<p class="m-label">Account</p><div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
-      '<div><div style="font-weight:800;">Admin</div><div style="font-size:12px;color:var(--muted);">' + (isAdmin ? 'Logged in as ' + esc(adminUser||'admin') : 'Admin access') + '</div></div>' +
-      '<button id="adminSettingsBtn" class="btn-primary bigbtn inline-btn">' + (isAdmin ? 'Open Panel' : 'Login') + '</button>' +
-      '</div>' +
       '<p class="m-label">Look</p><div class="theme-grid">' + THEMES.map(function (t) {
         return '<button class="theme-opt bigbtn' + (t[0] === cur ? " on" : "") + '" data-t="' + t[0] + '"><span class="theme-prev tp-' + t[0] + '"><i></i><i></i></span><b>' + t[1] + '</b><small>' + t[2] + '</small></button>';
       }).join("") + '</div>' +

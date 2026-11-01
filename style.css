@@ -6,15 +6,25 @@
   max-width: 100%;
 }
 
-html,
+html {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: clip;
+  position: relative;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   width: 100%;
   max-width: 100%;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
   -webkit-text-size-adjust: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 img,
@@ -382,7 +392,7 @@ select {
   min-height: 100dvh;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   box-sizing: border-box;
   padding-bottom: 90px;
 }
@@ -391,6 +401,7 @@ select {
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
+  contain: paint;
 }
 
 .bg-glow-1 {
@@ -639,10 +650,12 @@ select {
   z-index: 1002;
   width: min(520px, calc(100% - 20px));
   max-width: calc(100% - 20px);
-  margin: 0 auto;
+  margin: auto;
   box-sizing: border-box;
-  max-height: calc(100dvh - 36px);
+  max-height: min(92dvh, calc(100% - 24px));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* ============================================================
@@ -799,7 +812,6 @@ html {
 }
 
 body {
-  overscroll-behavior-y: none;
   -webkit-touch-callout: none;
 }
 
@@ -1836,7 +1848,7 @@ body {
   box-shadow: 0 0 0 3px rgba(56, 189, 248, .25);
 }
 
-body { touch-action: manipulation; }
+/* body touch-action removed to allow mobile scroll */
 .toast {
   font-size: 14px;
 }
