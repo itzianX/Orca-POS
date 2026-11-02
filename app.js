@@ -17,10 +17,10 @@
   var userColors = ["#7ab8dc", "#e79bbd", "#e5c166", "#6fcfa5", "#a99be0", "#e8909a", "#6cc6d4", "#8fd694", "#c3a0e0", "#dcc65a"];
   var denoms = [{ v: 1000, l: "₱1000" }, { v: 500, l: "₱500" }, { v: 200, l: "₱200" }, { v: 100, l: "₱100" }, { v: 50, l: "₱50" }, { v: 20, l: "₱20" }, { v: 10, l: "₱10" }, { v: 5, l: "₱5" }, { v: 1, l: "₱1" }];
   var defaultProds = [
-    { name: "Sardines", price: 22, photo: null, grad: 0 }, { name: "Egg", price: 8, photo: null, grad: 1 }
+    { name: "Egg", price: 8, photo: null, grad: 1 }
   ];
   // Names that older versions already seeded on existing devices
-  var ORIGINAL_DEFAULTS = ["Sardines", "Egg", "Lollipop", "Cup Noodles", "Juice", "Water", "Rice 1kg", "Bread"];
+  var ORIGINAL_DEFAULTS = ["Egg"];
 
   var products = [], transactions = [], utang = [];
   var currentUser = null, currentView = "store", searchQuery = "", itemsSearchQuery = "";
@@ -37,7 +37,7 @@
   function startInactivityTimer() {
     clearInactivityTimer();
     if (!isDevSession) return;
-    inactivityTimer = setTimeout(function(){
+    inactivityTimer = setTimeout(function () {
       if (isDevSession && currentUser === "DEV") {
         lockDev();
       }
@@ -50,10 +50,10 @@
     if (inactivityTimer) { clearTimeout(inactivityTimer); inactivityTimer = null; }
   }
   function signOutDev() {
-    if (sb) { try { sb.auth.signOut(); } catch(e){} }
+    if (sb) { try { sb.auth.signOut(); } catch (e) { } }
     isDevSession = false; isAdmin = false; adminUser = null;
     clearInactivityTimer();
-    try { localStorage.removeItem('orca_admin'); } catch(e){}
+    try { localStorage.removeItem('orca_admin'); } catch (e) { }
     lsSet(K.c, null);
     currentUser = null;
     closeModal();
@@ -64,7 +64,7 @@
   function leaveDev() {
     clearInactivityTimer();
     isAdmin = false; adminUser = null;
-    try { localStorage.removeItem('orca_admin'); } catch(e){}
+    try { localStorage.removeItem('orca_admin'); } catch (e) { }
     lsSet(K.c, null);
     currentUser = null; cart = {}; utangCart = {};
   }
@@ -145,7 +145,7 @@
           target_users: [userName],
           created_by: adminUser || "Admin"
         });
-      } catch(e) { console.error('Restriction sync error:', e); }
+      } catch (e) { console.error('Restriction sync error:', e); }
     }
   }
 
@@ -167,7 +167,7 @@
           target_users: [userName],
           created_by: adminUser || "Admin"
         });
-      } catch(e) { console.error('Unrestrict sync error:', e); }
+      } catch (e) { console.error('Unrestrict sync error:', e); }
     }
   }
 
@@ -177,23 +177,23 @@
     var typeLabel = r.type === "temporary" ? "Temporary Restriction" : "Administrative Hold";
     openModal(
       '<div class="dlg" style="text-align:center;">' +
-        '<div class="dlg-ic danger" style="width:64px;height:64px;margin:0 auto 12px;background:rgba(239,68,68,.16);color:#f87171;display:flex;align-items:center;justify-content:center;border-radius:50%;">' +
-          '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' +
-        '</div>' +
-        '<h3 style="margin:0 0 6px;font-size:20px;font-weight:800;color:var(--text);">Transaction Restricted</h3>' +
-        '<p style="margin:0 0 14px;font-size:13px;color:#f87171;font-weight:700;">' + esc(typeLabel) + ' · ' + esc(displayName(user)) + '</p>' +
-        '<div style="background:var(--card2);border:1.5px solid rgba(239,68,68,.35);border-radius:14px;padding:14px;margin:0 0 14px;text-align:left;">' +
-          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;letter-spacing:.05em;margin-bottom:4px;">Reason for restriction:</div>' +
-          '<div style="font-size:14px;color:var(--text);font-weight:700;line-height:1.4;">' + esc(r.reason || "Under administrative review") + '</div>' +
-          (r.restricted_at ? '<div style="font-size:11px;color:var(--muted);margin-top:8px;">Issued: ' + new Date(r.restricted_at).toLocaleString("en-PH", { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" }) + (r.restricted_by ? ' · By ' + esc(r.restricted_by) : '') + '</div>' : '') +
-        '</div>' +
-        '<p style="font-size:13px;color:var(--text2);line-height:1.5;margin:0 0 16px;">' +
-          'This cashier account is temporarily blocked from processing sales checkouts and recording utang (credit). Please contact store management to lift this restriction.' +
-        '</p>' +
-        '<div style="display:flex;gap:10px;">' +
-          '<button id="restrClose" class="btn-ghost bigbtn" style="flex:1;">Dismiss</button>' +
-          '<button id="restrSwitch" class="btn-primary bigbtn" style="flex:1;">Switch Cashier</button>' +
-        '</div>' +
+      '<div class="dlg-ic danger" style="width:64px;height:64px;margin:0 auto 12px;background:rgba(239,68,68,.16);color:#f87171;display:flex;align-items:center;justify-content:center;border-radius:50%;">' +
+      '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' +
+      '</div>' +
+      '<h3 style="margin:0 0 6px;font-size:20px;font-weight:800;color:var(--text);">Transaction Restricted</h3>' +
+      '<p style="margin:0 0 14px;font-size:13px;color:#f87171;font-weight:700;">' + esc(typeLabel) + ' · ' + esc(displayName(user)) + '</p>' +
+      '<div style="background:var(--card2);border:1.5px solid rgba(239,68,68,.35);border-radius:14px;padding:14px;margin:0 0 14px;text-align:left;">' +
+      '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;letter-spacing:.05em;margin-bottom:4px;">Reason for restriction:</div>' +
+      '<div style="font-size:14px;color:var(--text);font-weight:700;line-height:1.4;">' + esc(r.reason || "Under administrative review") + '</div>' +
+      (r.restricted_at ? '<div style="font-size:11px;color:var(--muted);margin-top:8px;">Issued: ' + new Date(r.restricted_at).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) + (r.restricted_by ? ' · By ' + esc(r.restricted_by) : '') + '</div>' : '') +
+      '</div>' +
+      '<p style="font-size:13px;color:var(--text2);line-height:1.5;margin:0 0 16px;">' +
+      'This cashier account is temporarily blocked from processing sales checkouts and recording utang (credit). Please contact store management to lift this restriction.' +
+      '</p>' +
+      '<div style="display:flex;gap:10px;">' +
+      '<button id="restrClose" class="btn-ghost bigbtn" style="flex:1;">Dismiss</button>' +
+      '<button id="restrSwitch" class="btn-primary bigbtn" style="flex:1;">Switch Cashier</button>' +
+      '</div>' +
       '</div>',
       true,
       true
@@ -201,7 +201,7 @@
     var rc = document.getElementById("restrClose");
     if (rc) rc.onclick = closeModal;
     var rs = document.getElementById("restrSwitch");
-    if (rs) rs.onclick = function(){
+    if (rs) rs.onclick = function () {
       closeModal();
       lsSet(K.c, null);
       showWelcome();
@@ -214,10 +214,10 @@
     if (currentUser) set[currentUser] = true;
     try {
       var users = lsGet(K.n, []);
-      if (Array.isArray(users)) users.forEach(function(k){ set[k] = true; });
-    } catch(e){}
-    transactions.forEach(function(t){ if(t.user_name) set[t.user_name] = true; });
-    utang.forEach(function(u){ if(u.accepted_name) set[u.accepted_name] = true; });
+      if (Array.isArray(users)) users.forEach(function (k) { set[k] = true; });
+    } catch (e) { }
+    transactions.forEach(function (t) { if (t.user_name) set[t.user_name] = true; });
+    utang.forEach(function (u) { if (u.accepted_name) set[u.accepted_name] = true; });
     return Object.keys(set).sort();
   }
 
@@ -226,12 +226,12 @@
     try {
       var res = await sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(50);
       if (res.data) {
-        notifications = res.data.map(function(n){ 
-          return { id: n.id, title: n.title, message: n.message, type: n.type||'info', target_type: n.target_type||'all', target_users: n.target_users||[], created_by: n.created_by||'', created_at: n.created_at }; 
+        notifications = res.data.map(function (n) {
+          return { id: n.id, title: n.title, message: n.message, type: n.type || 'info', target_type: n.target_type || 'all', target_users: n.target_users || [], created_by: n.created_by || '', created_at: n.created_at };
         });
         checkAndShowNotifications();
       }
-    } catch(e) { console.error('notif sync error:', e); }
+    } catch (e) { console.error('notif sync error:', e); }
   }
 
   // Rebuild every user's restriction state from the notification log IN CHRONOLOGICAL ORDER.
@@ -242,20 +242,22 @@
     return isNaN(t) ? (Number(n && n.id) || 0) : t;
   }
   function applyRestrictionEvents() {
-    var evs = notifications.filter(function(n){
+    var evs = notifications.filter(function (n) {
       return (n.type === 'restriction' || n.type === 'unrestrict') && Array.isArray(n.target_users);
     });
-    evs.sort(function(a, b){ return (notifTime(a) - notifTime(b)) || ((Number(a.id) || 0) - (Number(b.id) || 0)); });
+    evs.sort(function (a, b) { return (notifTime(a) - notifTime(b)) || ((Number(a.id) || 0) - (Number(b.id) || 0)); });
     var latest = {};                       // newest event per user wins
-    evs.forEach(function(n){ n.target_users.forEach(function(u){ latest[u] = n; }); });
+    evs.forEach(function (n) { n.target_users.forEach(function (u) { latest[u] = n; }); });
 
     var map = getRestrictionsMap(), changed = false;
-    Object.keys(latest).forEach(function(u){
+    Object.keys(latest).forEach(function (u) {
       var n = latest[u], local = map[u], localOn = !!(local && local.active);
       if (n.type === 'restriction') {
         if (!localOn) {
-          map[u] = { active: true, reason: n.message || "Restricted by Store Administrator", type: "temporary",
-                     restricted_at: n.created_at, restricted_by: n.created_by || "Admin" };
+          map[u] = {
+            active: true, reason: n.message || "Restricted by Store Administrator", type: "temporary",
+            restricted_at: n.created_at, restricted_by: n.created_by || "Admin"
+          };
           changed = true;
         }
       } else if (localOn) {
@@ -268,8 +270,8 @@
     });
     if (changed) {
       setRestrictionsMap(map);
-      try { updateUserChip(); } catch(e){}
-      try { if (currentUser && modal.style.display !== "flex") render(); } catch(e){}
+      try { updateUserChip(); } catch (e) { }
+      try { if (currentUser && modal.style.display !== "flex") render(); } catch (e) { }
     }
   }
 
@@ -277,7 +279,7 @@
     if (!notifications.length) return;
     var myName = currentUser || displayName(currentUser);
     applyRestrictionEvents();
-    notifications.forEach(function(n){
+    notifications.forEach(function (n) {
       if (shownNotifs.indexOf(String(n.id)) >= 0) return;
       var show = false;
       if (n.target_type === 'all') show = true;
@@ -301,7 +303,7 @@
     var iconSvg = isWarning ?
       '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' :
       '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
-    var modalHtml = 
+    var modalHtml =
       '<div style="text-align:center;margin-bottom:12px;">' +
       '<div style="width:60px;height:60px;border-radius:50%;background:' + (isWarning ? 'rgba(239,68,68,.16)' : 'rgba(103,78,167,.2)') + ';display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">' +
       iconSvg +
@@ -316,27 +318,27 @@
     buzz(20);
   }
 
-  function openDevSignIn(){
+  function openDevSignIn() {
     isAdmin = false; adminUser = null;
-    try { localStorage.removeItem('orca_admin'); } catch(e){}
+    try { localStorage.removeItem('orca_admin'); } catch (e) { }
     var toggled = false;
     openModal(
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
-        '<div style="display:flex;align-items:center;gap:8px;">' +
-          '<div style="width:32px;height:32px;border-radius:8px;background:rgba(251,191,36,.15);color:#fbbf24;display:flex;align-items:center;justify-content:center;">' +
-            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
-          '</div>' +
-          '<h3 style="margin:0;font-size:18px;font-weight:800;">Developer Sign In</h3>' +
-        '</div>' +
-        '<button id="devx" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);">×</button>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<div style="width:32px;height:32px;border-radius:8px;background:rgba(251,191,36,.15);color:#fbbf24;display:flex;align-items:center;justify-content:center;">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
+      '</div>' +
+      '<h3 style="margin:0;font-size:18px;font-weight:800;">Developer Sign In</h3>' +
+      '</div>' +
+      '<button id="devx" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);">×</button>' +
       '</div>' +
       '<p style="margin:0 0 12px;font-size:13px;color:var(--muted);">Sign in with your Supabase account to access the developer panel.</p>' +
       '<input id="devEmail" type="email" placeholder="Email" style="width:100%;box-sizing:border-box;padding:12px;border:2px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--card2);color:var(--text);">' +
       '<div style="position:relative;">' +
-        '<input id="devPass" type="password" placeholder="Password" style="width:100%;box-sizing:border-box;padding:12px 44px 12px 12px;border:2px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card2);color:var(--text);">' +
-        '<button id="devPassToggle" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);padding:4px;cursor:pointer;" aria-label="Show password">' +
-          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8"/><circle cx="12" cy="12" r="3"/></svg>' +
-        '</button>' +
+      '<input id="devPass" type="password" placeholder="Password" style="width:100%;box-sizing:border-box;padding:12px 44px 12px 12px;border:2px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card2);color:var(--text);">' +
+      '<button id="devPassToggle" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);padding:4px;cursor:pointer;" aria-label="Show password">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8"/><circle cx="12" cy="12" r="3"/></svg>' +
+      '</button>' +
       '</div>' +
       '<button id="devLogin" class="bigbtn btn-primary" style="width:100%;padding:13px;border-radius:12px;border:none;font-weight:800;">Sign In as Developer</button>' +
       '<p id="devErr" style="display:none;color:#f87171;font-size:12px;margin:8px 0 0;text-align:center;font-weight:700;"></p>'
@@ -344,7 +346,7 @@
     document.getElementById('devx').onclick = closeModal;
     var passIn = document.getElementById('devPass');
     var toggle = document.getElementById('devPassToggle');
-    toggle.onclick = function(){
+    toggle.onclick = function () {
       toggled = !toggled;
       passIn.type = toggled ? 'text' : 'password';
       toggle.innerHTML = toggled
@@ -352,14 +354,14 @@
         : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8"/><circle cx="12" cy="12" r="3"/></svg>';
     };
     document.getElementById('devx').onclick = closeModal;
-    document.getElementById('devPass').onkeydown = function(e){ if (e.key === 'Enter') document.getElementById('devLogin').click(); };
-    document.getElementById('devLogin').onclick = async function(){
+    document.getElementById('devPass').onkeydown = function (e) { if (e.key === 'Enter') document.getElementById('devLogin').click(); };
+    document.getElementById('devLogin').onclick = async function () {
       var e = document.getElementById('devEmail').value.trim();
       var p = document.getElementById('devPass').value.trim();
       var err = document.getElementById('devErr');
       err.style.display = 'none';
-      if (!e || !p) { err.textContent = 'Please enter email and password'; err.style.display='block'; return; }
-      if (!sb) { err.textContent = 'Internet needed for developer sign-in'; err.style.display='block'; return; }
+      if (!e || !p) { err.textContent = 'Please enter email and password'; err.style.display = 'block'; return; }
+      if (!sb) { err.textContent = 'Internet needed for developer sign-in'; err.style.display = 'block'; return; }
       var btn = document.getElementById('devLogin');
       btn.disabled = true; btn.textContent = 'Signing in…';
       try {
@@ -402,85 +404,85 @@
         err.style.display = 'block';
       }
     };
-    document.getElementById('devPass').onkeydown = function(e){ if (e.key === 'Enter') document.getElementById('devLogin').click(); };
+    document.getElementById('devPass').onkeydown = function (e) { if (e.key === 'Enter') document.getElementById('devLogin').click(); };
   }
 
-  function openAdminPanel(initialTab){
+  function openAdminPanel(initialTab) {
     if (!(currentUser === "DEV" && isAdmin)) return;
     var activeTab = initialTab || "restrictions"; // "restrictions" or "broadcast"
     var allKnownUsers = getAllKnownUsers();
     var restrMap = getRestrictionsMap();
-    var restrictedCount = Object.keys(restrMap).filter(function(k){ return restrMap[k] && restrMap[k].active; }).length;
+    var restrictedCount = Object.keys(restrMap).filter(function (k) { return restrMap[k] && restrMap[k].active; }).length;
 
-    var tabsHtml = 
+    var tabsHtml =
       '<div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">' +
-        '<button id="tabRestr" class="bigbtn" style="flex:1;padding:9px;border-radius:10px;border:none;background:' + (activeTab === 'restrictions' ? 'var(--accent)' : 'var(--card2)') + ';color:' + (activeTab === 'restrictions' ? 'var(--on-accent)' : 'var(--muted)') + ';font-size:13px;font-weight:800;cursor:pointer;">' +
-          '<span style="display:inline-flex;align-items:center;gap:4px;">' + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' + ' Restrictions</span> ' + (restrictedCount > 0 ? '<span style="background:#ef4444;color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;margin-left:4px;">' + restrictedCount + '</span>' : '') +
-        '</button>' +
-        '<button id="tabBroad" class="bigbtn" style="flex:1;padding:9px;border-radius:10px;border:none;background:' + (activeTab === 'broadcast' ? 'var(--accent)' : 'var(--card2)') + ';color:' + (activeTab === 'broadcast' ? 'var(--on-accent)' : 'var(--muted)') + ';font-size:13px;font-weight:800;cursor:pointer;">' +
-          '<span style="display:inline-flex;align-items:center;gap:4px;">' + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' + ' Broadcast</span>' +
-        '</button>' +
+      '<button id="tabRestr" class="bigbtn" style="flex:1;padding:9px;border-radius:10px;border:none;background:' + (activeTab === 'restrictions' ? 'var(--accent)' : 'var(--card2)') + ';color:' + (activeTab === 'restrictions' ? 'var(--on-accent)' : 'var(--muted)') + ';font-size:13px;font-weight:800;cursor:pointer;">' +
+      '<span style="display:inline-flex;align-items:center;gap:4px;">' + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' + ' Restrictions</span> ' + (restrictedCount > 0 ? '<span style="background:#ef4444;color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;margin-left:4px;">' + restrictedCount + '</span>' : '') +
+      '</button>' +
+      '<button id="tabBroad" class="bigbtn" style="flex:1;padding:9px;border-radius:10px;border:none;background:' + (activeTab === 'broadcast' ? 'var(--accent)' : 'var(--card2)') + ';color:' + (activeTab === 'broadcast' ? 'var(--on-accent)' : 'var(--muted)') + ';font-size:13px;font-weight:800;cursor:pointer;">' +
+      '<span style="display:inline-flex;align-items:center;gap:4px;">' + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' + ' Broadcast</span>' +
+      '</button>' +
       '</div>';
 
-    var restrictionsTabContent = 
+    var restrictionsTabContent =
       '<div id="paneRestr" style="display:' + (activeTab === 'restrictions' ? 'block' : 'none') + ';">' +
-        '<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text2);line-height:1.5;">' +
-          '<b>Cashier Transaction Guard:</b> Restrict staff from completing checkouts and utang. A restriction pop-up will notify them immediately.' +
-        '</div>' +
-        '<div id="adminUserList" style="max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">' +
-          (function(){
-            var list = allKnownUsers.filter(function(u){ return u !== "DEV"; });
-            if (!list.length) return '<p style="text-align:center;color:var(--muted);font-size:13px;padding:16px;">No users found yet.</p>';
-            return list.map(function(u){
-              var r = restrMap[u];
-              var isRestr = !!(r && r.active);
-              return '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card2);border:1.5px solid ' + (isRestr ? 'rgba(239,68,68,.35)' : 'var(--border)') + ';border-radius:12px;padding:10px 12px;gap:8px;">' +
-                '<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">' +
-                  '<span class="ua" style="background:' + ucolor(u) + ';flex-shrink:0;">' + avTxt(u) + '</span>' +
-                  '<div style="min-width:0;">' +
-                    '<div style="font-weight:800;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(u) + (u === currentUser ? ' <small style="color:var(--accent-t);font-weight:600;">(Current)</small>' : '') + '</div>' +
-                    '<div style="font-size:11px;margin-top:2px;">' +
-                      (isRestr ? 
-                        '<span style="color:#f87171;font-weight:700;">Restricted (' + esc(r.type || 'temporary') + ')</span> · <span style="color:var(--muted);">' + esc(r.reason || 'Admin hold') + '</span>' : 
-                        '<span style="color:#34d399;font-weight:700;">Active (Can Transact)</span>') +
-                    '</div>' +
-                  '</div>' +
-                '</div>' +
-                '<button class="bigbtn ' + (isRestr ? 'btnUnrestr' : 'btnRestr') + '" data-u="' + esc(u) + '" style="padding:7px 12px;border-radius:8px;border:none;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;' + 
-                  (isRestr ? 'background:rgba(16,185,129,.18);color:#34d399;' : 'background:rgba(239,68,68,.16);color:#f87171;') + '">' +
-                  (isRestr ? 'Lift' : 'Restrict') +
-                '</button>' +
-              '</div>';
-            }).join('');
-          })() +
-        '</div>' +
+      '<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text2);line-height:1.5;">' +
+      '<b>Cashier Transaction Guard:</b> Restrict staff from completing checkouts and utang. A restriction pop-up will notify them immediately.' +
+      '</div>' +
+      '<div id="adminUserList" style="max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">' +
+      (function () {
+        var list = allKnownUsers.filter(function (u) { return u !== "DEV"; });
+        if (!list.length) return '<p style="text-align:center;color:var(--muted);font-size:13px;padding:16px;">No users found yet.</p>';
+        return list.map(function (u) {
+          var r = restrMap[u];
+          var isRestr = !!(r && r.active);
+          return '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card2);border:1.5px solid ' + (isRestr ? 'rgba(239,68,68,.35)' : 'var(--border)') + ';border-radius:12px;padding:10px 12px;gap:8px;">' +
+            '<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">' +
+            '<span class="ua" style="background:' + ucolor(u) + ';flex-shrink:0;">' + avTxt(u) + '</span>' +
+            '<div style="min-width:0;">' +
+            '<div style="font-weight:800;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(u) + (u === currentUser ? ' <small style="color:var(--accent-t);font-weight:600;">(Current)</small>' : '') + '</div>' +
+            '<div style="font-size:11px;margin-top:2px;">' +
+            (isRestr ?
+              '<span style="color:#f87171;font-weight:700;">Restricted (' + esc(r.type || 'temporary') + ')</span> · <span style="color:var(--muted);">' + esc(r.reason || 'Admin hold') + '</span>' :
+              '<span style="color:#34d399;font-weight:700;">Active (Can Transact)</span>') +
+            '</div>' +
+            '</div>' +
+            '</div>' +
+            '<button class="bigbtn ' + (isRestr ? 'btnUnrestr' : 'btnRestr') + '" data-u="' + esc(u) + '" style="padding:7px 12px;border-radius:8px;border:none;font-size:12px;font-weight:800;cursor:pointer;flex-shrink:0;' +
+            (isRestr ? 'background:rgba(16,185,129,.18);color:#34d399;' : 'background:rgba(239,68,68,.16);color:#f87171;') + '">' +
+            (isRestr ? 'Lift' : 'Restrict') +
+            '</button>' +
+            '</div>';
+        }).join('');
+      })() +
+      '</div>' +
       '</div>';
 
-    var broadcastTabContent = 
+    var broadcastTabContent =
       '<div id="paneBroad" style="display:' + (activeTab === 'broadcast' ? 'block' : 'none') + ';">' +
-        '<p style="margin:0 0 10px;font-size:12px;color:var(--muted);">Send an instant announcement pop-up to active devices.</p>' +
-        '<input id="ntTitle" type="text" placeholder="Notification Title" style="width:100%;box-sizing:border-box;padding:11px;border:1.5px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--card2);color:var(--text);font-size:14px;">' +
-        '<textarea id="ntMsg" placeholder="Message content..." style="width:100%;box-sizing:border-box;padding:11px;border:1.5px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card2);color:var(--text);min-height:74px;resize:vertical;font-size:14px;"></textarea>' +
-        '<div style="margin-bottom:10px;font-size:13px;"><label style="display:flex;align-items:center;gap:8px;font-weight:700;"><input type="radio" name="ntTarget" value="all" checked> Send to all cashiers</label>' +
-        '<label style="display:flex;align-items:center;gap:8px;font-weight:700;margin-top:6px;"><input type="radio" name="ntTarget" value="specific"> Send to specific cashier(s)</label></div>' +
-        '<div id="ntUsers" style="display:none;max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:10px;background:var(--card2);"></div>' +
-        '<button id="ntSend" class="bigbtn" style="width:100%;padding:12px;border-radius:12px;border:none;background:#10b981;color:#052e16;font-size:15px;font-weight:800;cursor:pointer;">Send Notification</button>' +
-        '<p id="ntErr" style="display:none;color:#f87171;font-size:12px;margin:6px 0 0;text-align:center;font-weight:700;"></p>' +
+      '<p style="margin:0 0 10px;font-size:12px;color:var(--muted);">Send an instant announcement pop-up to active devices.</p>' +
+      '<input id="ntTitle" type="text" placeholder="Notification Title" style="width:100%;box-sizing:border-box;padding:11px;border:1.5px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--card2);color:var(--text);font-size:14px;">' +
+      '<textarea id="ntMsg" placeholder="Message content..." style="width:100%;box-sizing:border-box;padding:11px;border:1.5px solid var(--border);border-radius:12px;margin-bottom:10px;background:var(--card2);color:var(--text);min-height:74px;resize:vertical;font-size:14px;"></textarea>' +
+      '<div style="margin-bottom:10px;font-size:13px;"><label style="display:flex;align-items:center;gap:8px;font-weight:700;"><input type="radio" name="ntTarget" value="all" checked> Send to all cashiers</label>' +
+      '<label style="display:flex;align-items:center;gap:8px;font-weight:700;margin-top:6px;"><input type="radio" name="ntTarget" value="specific"> Send to specific cashier(s)</label></div>' +
+      '<div id="ntUsers" style="display:none;max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:10px;background:var(--card2);"></div>' +
+      '<button id="ntSend" class="bigbtn" style="width:100%;padding:12px;border-radius:12px;border:none;background:#10b981;color:#052e16;font-size:15px;font-weight:800;cursor:pointer;">Send Notification</button>' +
+      '<p id="ntErr" style="display:none;color:#f87171;font-size:12px;margin:6px 0 0;text-align:center;font-weight:700;"></p>' +
       '</div>';
 
     openModal(
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
-        '<div>' +
-          '<div style="display:flex;align-items:center;gap:6px;">' +
-            '<span style="color:#fbbf24;display:inline-flex;align-items:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>' +
-            '<h3 style="margin:0;font-size:18px;font-weight:800;">Admin Control Panel</h3>' +
-          '</div>' +
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px;">Logged in: <b>' + esc(adminUser || 'Admin') + '</b></div>' +
-        '</div>' +
-        '<div style="display:flex;align-items:center;gap:8px;">' +
-          '<button id="adminLogoutBtn" class="bigbtn" style="padding:6px 10px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.12);color:#f87171;font-size:11px;font-weight:800;cursor:pointer;">Logout</button>' +
-          '<button id="apx" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);font-size:16px;cursor:pointer;">×</button>' +
-        '</div>' +
+      '<div>' +
+      '<div style="display:flex;align-items:center;gap:6px;">' +
+      '<span style="color:#fbbf24;display:inline-flex;align-items:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>' +
+      '<h3 style="margin:0;font-size:18px;font-weight:800;">Admin Control Panel</h3>' +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:2px;">Logged in: <b>' + esc(adminUser || 'Admin') + '</b></div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<button id="adminLogoutBtn" class="bigbtn" style="padding:6px 10px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.12);color:#f87171;font-size:11px;font-weight:800;cursor:pointer;">Logout</button>' +
+      '<button id="apx" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);font-size:16px;cursor:pointer;">×</button>' +
+      '</div>' +
       '</div>' +
       tabsHtml +
       restrictionsTabContent +
@@ -488,7 +490,7 @@
     );
 
     document.getElementById('apx').onclick = closeModal;
-    document.getElementById('adminLogoutBtn').onclick = function(){
+    document.getElementById('adminLogoutBtn').onclick = function () {
       signOutDev();
     };
 
@@ -499,7 +501,7 @@
     var paneBroad = document.getElementById('paneBroad');
 
     if (tabRestr && tabBroad) {
-      tabRestr.onclick = function(){
+      tabRestr.onclick = function () {
         activeTab = "restrictions";
         tabRestr.style.background = 'var(--accent)';
         tabRestr.style.color = 'var(--on-accent)';
@@ -508,7 +510,7 @@
         paneRestr.style.display = 'block';
         paneBroad.style.display = 'none';
       };
-      tabBroad.onclick = function(){
+      tabBroad.onclick = function () {
         activeTab = "broadcast";
         tabBroad.style.background = 'var(--accent)';
         tabBroad.style.color = 'var(--on-accent)';
@@ -520,14 +522,14 @@
     }
 
     // Restriction Action Buttons
-    Array.prototype.forEach.call(document.querySelectorAll('.btnRestr'), function(btn){
-      btn.onclick = function(){
+    Array.prototype.forEach.call(document.querySelectorAll('.btnRestr'), function (btn) {
+      btn.onclick = function () {
         var targetU = btn.getAttribute('data-u');
         openRestrictDialog(targetU);
       };
     });
-    Array.prototype.forEach.call(document.querySelectorAll('.btnUnrestr'), function(btn){
-      btn.onclick = async function(){
+    Array.prototype.forEach.call(document.querySelectorAll('.btnUnrestr'), function (btn) {
+      btn.onclick = async function () {
         var targetU = btn.getAttribute('data-u');
         await unrestrictUser(targetU);
         toast('Restriction lifted for ' + targetU, 'ok');
@@ -539,11 +541,11 @@
     // Broadcast logic
     var radios = document.getElementsByName('ntTarget') || [];
     var usersDiv = document.getElementById('ntUsers');
-    function toggleUsers(){ 
+    function toggleUsers() {
       if (!radios.length) return;
-      var v = Array.prototype.find.call(radios,function(r){return r.checked;});
+      var v = Array.prototype.find.call(radios, function (r) { return r.checked; });
       if (!v) return;
-      if (usersDiv) usersDiv.style.display = v.value==='specific'?'block':'none';
+      if (usersDiv) usersDiv.style.display = v.value === 'specific' ? 'block' : 'none';
     }
     if (radios[0]) radios[0].onchange = toggleUsers;
     if (radios[1]) radios[1].onchange = toggleUsers;
@@ -551,30 +553,30 @@
 
     if (usersDiv) {
       usersDiv.innerHTML = '';
-      Array.prototype.forEach.call(allKnownUsers, function(u){
+      Array.prototype.forEach.call(allKnownUsers, function (u) {
         var row = document.createElement('label');
         row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:13px;';
-        row.innerHTML = '<input type="checkbox" value="'+esc(u)+'"> <span>'+esc(u)+'</span>';
+        row.innerHTML = '<input type="checkbox" value="' + esc(u) + '"> <span>' + esc(u) + '</span>';
         usersDiv.appendChild(row);
       });
     }
 
     var ntSend = document.getElementById('ntSend');
     if (ntSend) {
-      ntSend.onclick = async function(){
+      ntSend.onclick = async function () {
         var titleEl = document.getElementById('ntTitle');
         var msgEl = document.getElementById('ntMsg');
         var title = titleEl ? titleEl.value.trim() : '';
         var msg = msgEl ? msgEl.value.trim() : '';
-        var err = document.getElementById('ntErr'); if (err) err.style.display='none';
-        if (!title || !msg) { if (err){ err.textContent='Title and message are required'; err.style.display='block'; } return; }
-        
-        var target = radios.length ? (Array.prototype.find.call(radios,function(r){return r.checked;})||{value:'all'}).value : 'all';
+        var err = document.getElementById('ntErr'); if (err) err.style.display = 'none';
+        if (!title || !msg) { if (err) { err.textContent = 'Title and message are required'; err.style.display = 'block'; } return; }
+
+        var target = radios.length ? (Array.prototype.find.call(radios, function (r) { return r.checked; }) || { value: 'all' }).value : 'all';
         var targetUsers = [];
         if (target === 'specific' && usersDiv) {
           var checks = usersDiv.querySelectorAll('input[type=checkbox]:checked') || [];
-          Array.prototype.forEach.call(checks, function(c){ if (c && c.value) targetUsers.push(c.value); });
-          if (!targetUsers.length) { if (err){ err.textContent='Select at least one cashier'; err.style.display='block'; } return; }
+          Array.prototype.forEach.call(checks, function (c) { if (c && c.value) targetUsers.push(c.value); });
+          if (!targetUsers.length) { if (err) { err.textContent = 'Select at least one cashier'; err.style.display = 'block'; } return; }
         }
 
         if (!(currentUser === "DEV" && isAdmin)) return;
@@ -582,12 +584,12 @@
         if (sb) {
           try {
             var id = Date.now();
-            await sb.from('notifications').insert({ id:id, title:title, message:msg, type:'info', target_type:target, target_users:targetUsers, created_by: adminUser||'Admin' });
-          } catch(ex){ console.error('Supabase broadcast error:', ex); }
+            await sb.from('notifications').insert({ id: id, title: title, message: msg, type: 'info', target_type: target, target_users: targetUsers, created_by: adminUser || 'Admin' });
+          } catch (ex) { console.error('Supabase broadcast error:', ex); }
         }
 
         // Also add to local notifications for immediate self-display if targeted
-        notifications.unshift({ id: Date.now(), title: title, message: msg, type: 'info', target_type: target, target_users: targetUsers, created_by: adminUser||'Admin', created_at: new Date().toISOString() });
+        notifications.unshift({ id: Date.now(), title: title, message: msg, type: 'info', target_type: target, target_users: targetUsers, created_by: adminUser || 'Admin', created_at: new Date().toISOString() });
         checkAndShowNotifications();
 
         toast('Notification broadcasted', 'ok');
@@ -600,45 +602,45 @@
   function openRestrictDialog(userName) {
     openModal(
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
-        '<div style="display:flex;align-items:center;gap:6px;">' +
-          '<span style="color:#ef4444;display:inline-flex;align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></span>' +
-          '<h3 style="margin:0;font-size:18px;font-weight:800;">Restrict ' + esc(userName) + '</h3>' +
-        '</div>' +
-        '<button id="rdClose" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);">×</button>' +
+      '<div style="display:flex;align-items:center;gap:6px;">' +
+      '<span style="color:#ef4444;display:inline-flex;align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></span>' +
+      '<h3 style="margin:0;font-size:18px;font-weight:800;">Restrict ' + esc(userName) + '</h3>' +
+      '</div>' +
+      '<button id="rdClose" class="bigbtn" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--accent-soft);color:var(--accent-t);">×</button>' +
       '</div>' +
       '<p style="margin:0 0 12px;font-size:13px;color:var(--text2);line-height:1.5;">' +
-        'This cashier will be blocked from checkouts and recording utang. A warning panel will explain the restriction.' +
+      'This cashier will be blocked from checkouts and recording utang. A warning panel will explain the restriction.' +
       '</p>' +
       '<div style="margin-bottom:12px;">' +
-        '<div class="field-label" style="font-weight:700;margin-bottom:6px;">Restriction Type</div>' +
-        '<label style="display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:6px;font-size:13px;"><input type="radio" name="rdType" value="temporary" checked> Temporary (Shift audit / Review)</label>' +
-        '<label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;"><input type="radio" name="rdType" value="indefinite"> Indefinite Hold</label>' +
+      '<div class="field-label" style="font-weight:700;margin-bottom:6px;">Restriction Type</div>' +
+      '<label style="display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:6px;font-size:13px;"><input type="radio" name="rdType" value="temporary" checked> Temporary (Shift audit / Review)</label>' +
+      '<label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;"><input type="radio" name="rdType" value="indefinite"> Indefinite Hold</label>' +
       '</div>' +
       '<div style="margin-bottom:12px;">' +
-        '<div class="field-label" style="font-weight:700;margin-bottom:6px;">Reason for Restriction</div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">' +
-          '<button class="rdQuick bigbtn" data-r="Cash drawer reconciliation in progress" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);cursor:pointer;">Drawer Reconciliation</button>' +
-          '<button class="rdQuick bigbtn" data-r="Routine shift audit in progress" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);cursor:pointer;">Routine Shift Audit</button>' +
-          '<button class="rdQuick bigbtn" data-r="Transaction review requested by Admin" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);cursor:pointer;">Transaction Review</button>' +
-        '</div>' +
-        '<input id="rdReason" type="text" placeholder="Enter reason for restriction..." value="Cash drawer reconciliation in progress" style="width:100%;box-sizing:border-box;padding:11px;border:1.5px solid var(--border);border-radius:12px;background:var(--card2);color:var(--text);font-size:14px;">' +
+      '<div class="field-label" style="font-weight:700;margin-bottom:6px;">Reason for Restriction</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">' +
+      '<button class="rdQuick bigbtn" data-r="Cash drawer reconciliation in progress" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);cursor:pointer;">Drawer Reconciliation</button>' +
+      '<button class="rdQuick bigbtn" data-r="Routine shift audit in progress" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);cursor:pointer;">Routine Shift Audit</button>' +
+      '<button class="rdQuick bigbtn" data-r="Transaction review requested by Admin" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);cursor:pointer;">Transaction Review</button>' +
+      '</div>' +
+      '<input id="rdReason" type="text" placeholder="Enter reason for restriction..." value="Cash drawer reconciliation in progress" style="width:100%;box-sizing:border-box;padding:11px;border:1.5px solid var(--border);border-radius:12px;background:var(--card2);color:var(--text);font-size:14px;">' +
       '</div>' +
       '<div style="display:flex;gap:10px;">' +
-        '<button id="rdCancel" class="btn-ghost bigbtn" style="flex:1;">Cancel</button>' +
-        '<button id="rdSubmit" class="btn-danger bigbtn" style="flex:1;background:#ef4444;color:#fff;">Confirm Restriction</button>' +
+      '<button id="rdCancel" class="btn-ghost bigbtn" style="flex:1;">Cancel</button>' +
+      '<button id="rdSubmit" class="btn-danger bigbtn" style="flex:1;background:#ef4444;color:#fff;">Confirm Restriction</button>' +
       '</div>'
     );
 
-    document.getElementById('rdClose').onclick = function(){ openAdminPanel('restrictions'); };
-    document.getElementById('rdCancel').onclick = function(){ openAdminPanel('restrictions'); };
+    document.getElementById('rdClose').onclick = function () { openAdminPanel('restrictions'); };
+    document.getElementById('rdCancel').onclick = function () { openAdminPanel('restrictions'); };
 
-    Array.prototype.forEach.call(document.querySelectorAll('.rdQuick'), function(qb){
-      qb.onclick = function(){
+    Array.prototype.forEach.call(document.querySelectorAll('.rdQuick'), function (qb) {
+      qb.onclick = function () {
         document.getElementById('rdReason').value = qb.getAttribute('data-r');
       };
     });
 
-    document.getElementById('rdSubmit').onclick = async function(){
+    document.getElementById('rdSubmit').onclick = async function () {
       var type = (document.querySelector('input[name="rdType"]:checked') || {}).value || 'temporary';
       var reason = document.getElementById('rdReason').value.trim() || 'Restricted by Store Administrator';
       await restrictUser(userName, reason, type);
@@ -689,24 +691,24 @@
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { toast("Storage full — export a backup"); return false; } }
   function getL(t) { return t === "products" ? products : t === "transactions" ? transactions : utang; }
   function setL(t, l) { if (t === "products") products = l; else if (t === "transactions") transactions = l; else utang = l; }
-  function save(t) { 
+  function save(t) {
     lsSet(t === "products" ? K.p : t === "transactions" ? K.t : K.u, getL(t));
     if (sb) {
       try {
         if (t === "transactions") {
           var list = getL(t);
           if (list && list.length) {
-            var rows = list.map(function(r){ return { id: r.id, user_name: r.user_name || r.user_email || '', user_email: r.user_email || r.user_name || '', items: r.items || [], total: r.total||0, cash: r.cash||0, change: r.change||0, method: r.method||'cash', created_at: r.created_at||new Date().toISOString() }; });
-            sb.from('transactions').upsert(rows, { onConflict: 'id' }).then(function(res){ if(res.error){ console.error('Supabase transactions error:', res.error.message, res.error.details||'', res.error.hint||''); } else { console.log('transactions synced:', rows.length); } });
+            var rows = list.map(function (r) { return { id: r.id, user_name: r.user_name || r.user_email || '', user_email: r.user_email || r.user_name || '', items: r.items || [], total: r.total || 0, cash: r.cash || 0, change: r.change || 0, method: r.method || 'cash', created_at: r.created_at || new Date().toISOString() }; });
+            sb.from('transactions').upsert(rows, { onConflict: 'id' }).then(function (res) { if (res.error) { console.error('Supabase transactions error:', res.error.message, res.error.details || '', res.error.hint || ''); } else { console.log('transactions synced:', rows.length); } });
           }
         } else if (t === "utang") {
           var ul = getL(t);
           if (ul && ul.length) {
-            var urows = ul.map(function(r){ return { id: r.id, debtor_name: r.debtor_name||'', items: r.items||[], total: r.total||0, note: r.note||'', accepted_by: r.accepted_by||'', accepted_name: r.accepted_name||'', created_at: r.created_at||new Date().toISOString() }; });
-            sb.from('utang').upsert(urows, { onConflict: 'id' }).then(function(res){ if(res.error){ console.error('Supabase utang error:', res.error.message, res.error.details||'', res.error.hint||''); } else { console.log('utang synced:', urows.length); } });
+            var urows = ul.map(function (r) { return { id: r.id, debtor_name: r.debtor_name || '', items: r.items || [], total: r.total || 0, note: r.note || '', accepted_by: r.accepted_by || '', accepted_name: r.accepted_name || '', created_at: r.created_at || new Date().toISOString() }; });
+            sb.from('utang').upsert(urows, { onConflict: 'id' }).then(function (res) { if (res.error) { console.error('Supabase utang error:', res.error.message, res.error.details || '', res.error.hint || ''); } else { console.log('utang synced:', urows.length); } });
           }
         }
-      } catch(e){ console.error('save sync exception:', e); }
+      } catch (e) { console.error('save sync exception:', e); }
     }
   }
   function addRow(t, row) {
@@ -717,17 +719,17 @@
     save(t); return row;
   }
   function updRow(t, id, patch) { getL(t).forEach(function (r) { if (String(r.id) === String(id)) Object.assign(r, patch); }); save(t); }
-  function delRow(t, id) { 
-    setL(t, getL(t).filter(function (r) { return String(r.id) !== String(id); })); 
+  function delRow(t, id) {
+    setL(t, getL(t).filter(function (r) { return String(r.id) !== String(id); }));
     save(t);
     if (sb) {
       try {
         if (t === "utang") {
-          sb.from('utang').delete().eq('id', id).then(function(res){ if(res.error) console.error('Supabase utang delete error:', res.error.message); else console.log('utang deleted from Supabase:', id); });
+          sb.from('utang').delete().eq('id', id).then(function (res) { if (res.error) console.error('Supabase utang delete error:', res.error.message); else console.log('utang deleted from Supabase:', id); });
         } else if (t === "transactions") {
-          sb.from('transactions').delete().eq('id', id).then(function(res){ if(res.error) console.error('Supabase transactions delete error:', res.error.message); else console.log('transaction deleted from Supabase:', id); });
+          sb.from('transactions').delete().eq('id', id).then(function (res) { if (res.error) console.error('Supabase transactions delete error:', res.error.message); else console.log('transaction deleted from Supabase:', id); });
         }
-      } catch(e) { console.error('delete sync exception:', e); }
+      } catch (e) { console.error('delete sync exception:', e); }
     }
   }
   function emptyState(title, text) {
@@ -771,19 +773,19 @@
       try {
         var tRes = await sb.from('transactions').select('*').order('created_at', { ascending: false }).limit(200);
         if (tRes.data && tRes.data.length) {
-          transactions = tRes.data.map(function(r){ return { id: r.id, user_name: r.user_name || r.user_email || '', user_email: r.user_email || r.user_name || '', items: r.items || [], total: r.total||0, cash: r.cash||0, change: r.change||0, method: r.method||'cash', created_at: r.created_at }; });
+          transactions = tRes.data.map(function (r) { return { id: r.id, user_name: r.user_name || r.user_email || '', user_email: r.user_email || r.user_name || '', items: r.items || [], total: r.total || 0, cash: r.cash || 0, change: r.change || 0, method: r.method || 'cash', created_at: r.created_at }; });
           lsSet(K.t, transactions);
         } else {
           transactions = lsGet(K.t, []);
         }
         var uRes = await sb.from('utang').select('*').order('created_at', { ascending: false }).limit(200);
         if (uRes.data && uRes.data.length) {
-          utang = uRes.data.map(function(r){ return { id: r.id, debtor_name: r.debtor_name||'', items: r.items||[], total: r.total||0, note: r.note||'', accepted_by: r.accepted_by||'', accepted_name: r.accepted_name||'', created_at: r.created_at }; });
+          utang = uRes.data.map(function (r) { return { id: r.id, debtor_name: r.debtor_name || '', items: r.items || [], total: r.total || 0, note: r.note || '', accepted_by: r.accepted_by || '', accepted_name: r.accepted_name || '', created_at: r.created_at }; });
           lsSet(K.u, utang);
         } else {
           utang = lsGet(K.u, []);
         }
-      } catch(e) {
+      } catch (e) {
         console.error('refreshData error:', e);
         transactions = lsGet(K.t, []);
         utang = lsGet(K.u, []);
@@ -847,11 +849,11 @@
     var devBadge = '<span style="background:rgba(251,191,36,.18);color:#fbbf24;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:800;margin-left:6px;display:inline-flex;align-items:center;gap:3px;">' + lockSvg + 'DEV \u00b7 Developer</span>';
     nl.innerHTML = (users.length ? '<p class="field-label">Choose your account</p><div class="acct-list">' : '') +
       '<div class="acct-row dev-row" style="border-top:none;padding-top:0;">' +
-        '<button class="acct-pick bigbtn" data-n="DEV" style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);">' +
-          '<span class="ua lg" style="background:rgba(251,191,36,.2);color:#fbbf24;">' + avTxt("DEV") + '</span>' +
-          '<span class="acct-name" style="color:#fbbf24;font-weight:800;">DEV</span>' + devBadge +
-        '</button>' +
-        '<span style="width:44px;"></span>' +
+      '<button class="acct-pick bigbtn" data-n="DEV" style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);">' +
+      '<span class="ua lg" style="background:rgba(251,191,36,.2);color:#fbbf24;">' + avTxt("DEV") + '</span>' +
+      '<span class="acct-name" style="color:#fbbf24;font-weight:800;">DEV</span>' + devBadge +
+      '</button>' +
+      '<span style="width:44px;"></span>' +
       '</div>' +
       (users.length ? users.map(function (n) {
         return '<div class="acct-row"><button class="acct-pick bigbtn" data-n="' + n + '"><span class="ua lg" style="background:' + ucolor(n) + '">' + avTxt(n) + '</span><span class="acct-name">' + n + '</span>' + (isUserRestricted(n) ? '<span style="background:rgba(239,68,68,.18);color:#f87171;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:800;margin-left:auto;">Restricted</span>' : '') + '</button>' +
@@ -895,7 +897,7 @@
     Array.prototype.forEach.call(navBtns, function (x) { x.classList.toggle("active", x.getAttribute("data-view") === "store"); });
     updateUserChip();
     refreshData().then(function () { render(); });
-    if (isUserRestricted(name)) { setTimeout(function(){ showRestrictionPopup(name); }, 350); }
+    if (isUserRestricted(name)) { setTimeout(function () { showRestrictionPopup(name); }, 350); }
     clearInactivityTimer();
   }
   document.getElementById("nameGo").onclick = function () { startSession(document.getElementById("nameInput").value); };
@@ -991,26 +993,26 @@
       '<p class="m-label">Account</p>' +
       (currentUser === "DEV" && isAdmin
         ? '<div style="background:var(--card2);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
-          '<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
-            '<div style="width:36px;height:36px;border-radius:10px;background:rgba(251,191,36,.15);color:#fbbf24;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
-            '</div>' +
-            '<div style="min-width:0;">' +
-              '<div style="font-weight:800;font-size:14px;color:var(--text);">Admin Panel</div>' +
-              '<div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Logged in as ' + esc(adminUser) + '</div>' +
-            '</div>' +
-          '</div>' +
-          '<button id="adminSettingsBtn" class="btn-primary bigbtn inline-btn" style="padding:8px 14px;font-size:13px;flex-shrink:0;">Open Panel</button>' +
+        '<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
+        '<div style="width:36px;height:36px;border-radius:10px;background:rgba(251,191,36,.15);color:#fbbf24;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
+        '</div>' +
+        '<div style="min-width:0;">' +
+        '<div style="font-weight:800;font-size:14px;color:var(--text);">Admin Panel</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Logged in as ' + esc(adminUser) + '</div>' +
+        '</div>' +
+        '</div>' +
+        '<button id="adminSettingsBtn" class="btn-primary bigbtn inline-btn" style="padding:8px 14px;font-size:13px;flex-shrink:0;">Open Panel</button>' +
         '</div>'
         : '')
       + (currentUser !== "DEV" ? (
-          '<button id="swBtn" class="btn-ghost bigbtn" style="margin-top:0;">Switch user</button>' +
-          '<button id="exitBtn" class="btn-ghost bigbtn">Exit app</button>' +
-          '<button id="delAcc" class="btn-danger bigbtn">Delete this account</button>'
-        ) : (
-          '<button id="swBtn" class="btn-ghost bigbtn" style="margin-top:0;">Switch user</button>' +
-          '<button id="exitBtn" class="btn-ghost bigbtn">Exit app</button>'
-        ))
+        '<button id="swBtn" class="btn-ghost bigbtn" style="margin-top:0;">Switch user</button>' +
+        '<button id="exitBtn" class="btn-ghost bigbtn">Exit app</button>' +
+        '<button id="delAcc" class="btn-danger bigbtn">Delete this account</button>'
+      ) : (
+        '<button id="swBtn" class="btn-ghost bigbtn" style="margin-top:0;">Switch user</button>' +
+        '<button id="exitBtn" class="btn-ghost bigbtn">Exit app</button>'
+      ))
     );
     document.getElementById("xSet").onclick = closeModal;
     function avDraw() {
@@ -1028,7 +1030,7 @@
     var rb = document.getElementById("renameBtn");
     if (rb) rb.onclick = function () { renameUser(document.getElementById("renameInput").value); };
     var adminBtn = document.getElementById("adminSettingsBtn");
-    if (adminBtn) adminBtn.onclick = function(){ closeModal(); if (currentUser === "DEV" && isAdmin) openAdminPanel(); else openDevSignIn(); };
+    if (adminBtn) adminBtn.onclick = function () { closeModal(); if (currentUser === "DEV" && isAdmin) openAdminPanel(); else openDevSignIn(); };
     var swBtn = document.getElementById("swBtn");
     if (swBtn) swBtn.onclick = function () { closeModal(); switchAway(); };
     document.getElementById("askDel").onchange = function () { lsSet(K.sd, !this.checked); toast(this.checked ? "Item deletion will ask first" : "Item deletion won’t ask again"); };
@@ -1037,7 +1039,7 @@
     });
     var ib = document.getElementById("installBtn");
     if (ib) ib.onclick = function () { deferredInstall.prompt(); deferredInstall.userChoice.then(function () { deferredInstall = null; closeModal(); }); };
-        document.getElementById("exitBtn").onclick = askExit;
+    document.getElementById("exitBtn").onclick = askExit;
     document.getElementById("delAcc").onclick = function () { var n = currentUser; closeModal(); askDeleteAccount(n); };
     document.getElementById("expBtn").onclick = function () {
       var data = { app: "orca-pos", v: 1, exported: new Date().toISOString(), products: products, transactions: transactions, utang: utang, daily: lsGet(K.d, {}), users: lsGet(K.n, []), avatars: avMap };
@@ -1096,7 +1098,7 @@
     si.oninput = function () { searchQuery = si.value; fillGrid(); };
     var cs = document.getElementById("clearSearch"); if (cs) cs.onclick = function () { searchQuery = ""; si.value = ""; fillGrid(); };
     fillGrid();
-    var srd = document.getElementById("storeRestrDetails"); if (srd) srd.onclick = function(){ showRestrictionPopup(currentUser); };
+    var srd = document.getElementById("storeRestrDetails"); if (srd) srd.onclick = function () { showRestrictionPopup(currentUser); };
   }
   function fillGrid() {
     var grid = document.getElementById("pg"); if (!grid) return;
@@ -1109,7 +1111,7 @@
       var card = document.createElement("div");
       card.className = "pcard";
       card.style.cssText = "background:var(--card);border:2px solid " + (qty ? "var(--accent)" : "var(--border)") + ";border-radius:12px;padding:6px;text-align:center;position:relative;";
-card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
+      card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
         '<div style="width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,.08);">' + prodThumb(p, 14) + '</div>' +
         '<div style="flex:1;min-width:0;">' +
         '<div style="font-size:13px;font-weight:900;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + p.name + '</div>' +
@@ -1219,10 +1221,10 @@ card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
     var total = cartTotal(), cash = cashVal(), change = Math.round((cash - total) * 100) / 100;
     var items = Object.keys(cart).map(function (id) { var p = products.find(function (x) { return String(x.id) === String(id) }); return { name: p.name, qty: cart[id], price: Number(p.price) }; });
     var btn = document.getElementById("completeSale"); btn.textContent = "Saving..."; btn.disabled = true;
-addRow("transactions", { user_email: currentUser, user_name: displayName(currentUser), items: items, total: total, cash: cash, change: change, method: "cash" });
-Object.keys(cart).forEach(function (id) { var p = products.find(function (x) { return String(x.id) === String(id); }); if (p && p.stock != null) { p.stock = Math.max(0, Number(p.stock) - cart[id]); } });
-save("products");
-cart = {}; closeModal(); updateCoBar();
+    addRow("transactions", { user_email: currentUser, user_name: displayName(currentUser), items: items, total: total, cash: cash, change: change, method: "cash" });
+    Object.keys(cart).forEach(function (id) { var p = products.find(function (x) { return String(x.id) === String(id); }); if (p && p.stock != null) { p.stock = Math.max(0, Number(p.stock) - cart[id]); } });
+    save("products");
+    cart = {}; closeModal(); updateCoBar();
     openModal('<div class="success"><svg class="state-orca bob" viewBox="0 0 120 90" role="img" aria-label="Happy orca"><use href="#orcaCute"/></svg><h3>Sale complete</h3><div class="chg-label">Give change</div><div class="chg-amt">' + money(change) + '</div><p class="m-note">' + money(total) + ' sale · kept in Sales for 24 hours</p><button id="okSale" class="btn-primary bigbtn">New sale</button></div>', true);
     var ok = document.getElementById("okSale");
     ok.onclick = function () { closeModal(); refreshData().then(function () { renderStore(); }); };
@@ -1325,14 +1327,14 @@ cart = {}; closeModal(); updateCoBar();
         pr.appendChild(row);
       });
       document.getElementById("pickTotal").textContent = money(utangTotal());
-      Array.prototype.forEach.call(pr.querySelectorAll(".pMinus"), function (b) { b.onclick = function () { var id = b.getAttribute("data-id"); if (utangCart[id]) { utangCart[id]--; if (utangCart[id] <= 0) delete utangCart[id]; } fillPicker(); var ups = document.getElementById("upSearch"); if (ups) { try { ups.focus(); ups.selectionStart = ups.selectionEnd = ups.value.length; } catch(e){} } }; });
-      Array.prototype.forEach.call(pr.querySelectorAll(".pPlus"), function (b) { b.onclick = function () { var id = b.getAttribute("data-id"); utangCart[id] = (utangCart[id] || 0) + 1; fillPicker(); var ups = document.getElementById("upSearch"); if (ups) { try { ups.focus(); ups.selectionStart = ups.selectionEnd = ups.value.length; } catch(e){} } }; });
+      Array.prototype.forEach.call(pr.querySelectorAll(".pMinus"), function (b) { b.onclick = function () { var id = b.getAttribute("data-id"); if (utangCart[id]) { utangCart[id]--; if (utangCart[id] <= 0) delete utangCart[id]; } fillPicker(); var ups = document.getElementById("upSearch"); if (ups) { try { ups.focus(); ups.selectionStart = ups.selectionEnd = ups.value.length; } catch (e) { } } }; });
+      Array.prototype.forEach.call(pr.querySelectorAll(".pPlus"), function (b) { b.onclick = function () { var id = b.getAttribute("data-id"); utangCart[id] = (utangCart[id] || 0) + 1; fillPicker(); var ups = document.getElementById("upSearch"); if (ups) { try { ups.focus(); ups.selectionStart = ups.selectionEnd = ups.value.length; } catch (e) { } } }; });
     }
     fillPicker();
     var ups = document.getElementById("upSearch");
     if (ups) {
-      ups.oninput = function () { upQuery = ups.value || ""; fillPicker(); try { ups.focus(); ups.selectionStart = ups.selectionEnd = ups.value.length; } catch(e){} };
-      setTimeout(function(){ try { ups.focus(); } catch(e){} }, 10);
+      ups.oninput = function () { upQuery = ups.value || ""; fillPicker(); try { ups.focus(); ups.selectionStart = ups.selectionEnd = ups.value.length; } catch (e) { } };
+      setTimeout(function () { try { ups.focus(); } catch (e) { } }, 10);
     }
     document.getElementById("pickClose").onclick = closeModal;
     document.getElementById("pickDone").onclick = function () { closeModal(); renderUtang(); };
@@ -1359,7 +1361,7 @@ cart = {}; closeModal(); updateCoBar();
       '<div id="prodList"></div></div>';
     if (prevFocus === "itemSearch") {
       var is = document.getElementById("itemSearch");
-      if (is) { is.focus(); try { is.selectionStart = is.selectionEnd = is.value.length; } catch(e){} }
+      if (is) { is.focus(); try { is.selectionStart = is.selectionEnd = is.value.length; } catch (e) { } }
     }
     var sw = document.getElementById("swatches");
     grads.forEach(function (g, i) {
@@ -1377,19 +1379,19 @@ cart = {}; closeModal(); updateCoBar();
     document.getElementById("photoInput").onchange = function (e) { var f = e.target.files[0]; if (!f) return; var r = new FileReader(); r.onload = function (ev) { var img = new Image(); img.onload = function () { var c = document.createElement("canvas"); var sz = 120; var sc = Math.min(sz / img.width, sz / img.height); c.width = img.width * sc; c.height = img.height * sc; c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); selectedPhoto = c.toDataURL("image/jpeg", .7); refreshPP(); }; img.src = ev.target.result; }; r.readAsDataURL(f); };
     document.getElementById("clearPhoto").onclick = function () { selectedPhoto = null; document.getElementById("photoInput").value = ""; refreshPP(); };
     document.getElementById("addBtn").onclick = async function () {
-var nm = document.getElementById("newName").value.trim(); var pr = parseFloat(document.getElementById("newPrice").value); var st = parseInt(document.getElementById("newStock").value, 10);
-if (!nm || !pr || pr <= 0) { document.getElementById("addErr").style.display = "block"; return; }
-var btn = document.getElementById("addBtn"); btn.textContent = "Saving..."; btn.style.pointerEvents = "none";
-addRow("products", { name: nm.charAt(0).toUpperCase() + nm.slice(1), price: Math.round(pr * 100) / 100, photo: selectedPhoto, grad: selectedGrad, stock: isNaN(st) ? null : st });
-buzz(12); toast("Item added successfully", "ok");
-await refreshData(); renderAdd();
+      var nm = document.getElementById("newName").value.trim(); var pr = parseFloat(document.getElementById("newPrice").value); var st = parseInt(document.getElementById("newStock").value, 10);
+      if (!nm || !pr || pr <= 0) { document.getElementById("addErr").style.display = "block"; return; }
+      var btn = document.getElementById("addBtn"); btn.textContent = "Saving..."; btn.style.pointerEvents = "none";
+      addRow("products", { name: nm.charAt(0).toUpperCase() + nm.slice(1), price: Math.round(pr * 100) / 100, photo: selectedPhoto, grad: selectedGrad, stock: isNaN(st) ? null : st });
+      buzz(12); toast("Item added successfully", "ok");
+      await refreshData(); renderAdd();
     };
     var itemSearch = document.getElementById("itemSearch");
     if (itemSearch) {
-      itemSearch.oninput = function () { 
-        itemsSearchQuery = itemSearch.value || ""; 
+      itemSearch.oninput = function () {
+        itemsSearchQuery = itemSearch.value || "";
         renderProdList();
-        try { itemSearch.focus(); itemSearch.selectionStart = itemSearch.selectionEnd = itemSearch.value.length; } catch(e){}
+        try { itemSearch.focus(); itemSearch.selectionStart = itemSearch.selectionEnd = itemSearch.value.length; } catch (e) { }
       };
     }
     renderProdList();
@@ -1514,29 +1516,29 @@ await refreshData(); renderAdd();
     if (transactions.length) {
       h += '<div class="card-box" style="border-left:4px solid #ef4444;background:var(--card2);padding:14px;border-radius:14px;margin-bottom:14px;">' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
-          '<span style="font-weight:800;font-size:14px;color:var(--text);">Order Void Instructions</span>' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+        '<span style="font-weight:800;font-size:14px;color:var(--text);">Order Void Instructions</span>' +
         '</div>' +
         '<p style="font-size:12px;color:var(--text2);margin:0 0 8px;line-height:1.5;">' +
-          'Use the <b>Void</b> button only to cancel accidental entries or customer-cancelled sales.' +
+        'Use the <b>Void</b> button only to cancel accidental entries or customer-cancelled sales.' +
         '</p>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;">' +
-          '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;">' +
-            '<b style="color:#ef4444;display:flex;align-items:center;gap:4px;margin-bottom:2px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="display:inline-block;vertical-align:middle;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> What Voiding Does:</b>' +
-            '<span style="color:var(--muted);line-height:1.4;display:block;">Permanently removes the order from today\'s revenue and stats. Cannot be undone.</span>' +
-          '</div>' +
-          '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;">' +
-            '<b style="color:var(--accent-t);display:flex;align-items:center;gap:4px;margin-bottom:2px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg> Drawer Cash:</b>' +
-            '<span style="color:var(--muted);line-height:1.4;display:block;">If cash was already collected, manually refund it to customer or adjust your physical drawer.</span>' +
-          '</div>' +
+        '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;">' +
+        '<b style="color:#ef4444;display:flex;align-items:center;gap:4px;margin-bottom:2px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="display:inline-block;vertical-align:middle;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> What Voiding Does:</b>' +
+        '<span style="color:var(--muted);line-height:1.4;display:block;">Permanently removes the order from today\'s revenue and stats. Cannot be undone.</span>' +
         '</div>' +
-      '</div>';
+        '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;">' +
+        '<b style="color:var(--accent-t);display:flex;align-items:center;gap:4px;margin-bottom:2px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline-block;vertical-align:middle;"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg> Drawer Cash:</b>' +
+        '<span style="color:var(--muted);line-height:1.4;display:block;">If cash was already collected, manually refund it to customer or adjust your physical drawer.</span>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
       h += '<h3 class="card-h list-h">Recent orders</h3><div id="histList"></div>';
     }
     h += '<p class="note-bar">Order details are kept for 24 hours. Daily totals are kept for 30 days. Utang stays until it is paid.</p></div>';
     view.innerHTML = h;
     var hl = document.getElementById("histList"); if (!hl) return;
-transactions.forEach(function (t) {
+    transactions.forEach(function (t) {
       var items = t.items.map(function (i) { return i.qty + "× " + esc(i.name); }).join(", ");
       var pay = "Cash " + money(Number(t.cash)) + " · Change " + money(Number(t.change));
       var row = document.createElement("div"); row.className = "order-row";
@@ -1549,7 +1551,7 @@ transactions.forEach(function (t) {
       b.onclick = function (e) {
         e.stopPropagation();
         var id = b.getAttribute("data-id");
-        var t = transactions.find(function(x){ return String(x.id) === String(id); });
+        var t = transactions.find(function (x) { return String(x.id) === String(id); });
         var who = t ? (t.user_name || "Staff") : "Staff";
         var amt = t ? money(t.total) : "";
         var time = t && t.created_at ? new Date(t.created_at).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" }) : "";
@@ -1741,8 +1743,8 @@ transactions.forEach(function (t) {
   }
   restoreDevSession();
 
-  try { syncNotifications(); setInterval(syncNotifications, 30000); } catch(e){}
-  ['click','keydown','touchstart','mousemove'].forEach(function(evt){
+  try { syncNotifications(); setInterval(syncNotifications, 30000); } catch (e) { }
+  ['click', 'keydown', 'touchstart', 'mousemove'].forEach(function (evt) {
     window.addEventListener(evt, resetInactivityTimer, { passive: true });
   });
 })();
